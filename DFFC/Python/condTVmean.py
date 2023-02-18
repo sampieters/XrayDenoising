@@ -14,14 +14,14 @@ def fun(projections, meanFF, FF, DF, x):
     return cost
 
 def condTVmean(projections, meanFF, FF, DF, x, DS):
-    projections = tryout.imresize(projections, 1/DS)
-    meanFF = tryout.imresize(meanFF, 1/DS)
+    projections = imresize.imresize(projections, 1/DS)
+    meanFF = imresize.imresize(meanFF, 1/DS)
     FF2 = np.zeros((FF.shape[0], meanFF.shape[0], meanFF.shape[1]))
     for i in range(0, FF.shape[0]):
-        h = tryout.imresize(FF[:][:][i], 1/DS)
-        FF2[:][:][i] = tryout.imresize(FF[:][:][i], 1/DS)
+        h = imresize.imresize(FF[:][:][i], 1/DS)
+        FF2[:][:][i] = imresize.imresize(FF[:][:][i], 1/DS)
     FF = FF2
-    DF = tryout.imresize(DF, 1/DS)
+    DF = imresize.imresize(DF, 1/DS)
     func = lambda X: fun(projections, meanFF, FF, DF, X)
     xNew = optimize.minimize(func, x)
     return xNew

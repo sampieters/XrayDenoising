@@ -126,6 +126,7 @@ if __name__ == '__main__':
         filteredEigenFlatfields[:][:][i] = (tmp2 * max) - min + min
 
     meanVector = np.zeros(len(nrImage))
+
     for i in range(1, len(nrImage)+1):
         print(f'Conventional FFC: {str(i)}/{str(len(nrImage))}...')
         # Load projection
