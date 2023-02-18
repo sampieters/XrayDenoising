@@ -1,5 +1,5 @@
 import numpy as np
-import scipy as sp
+import scipy
 
 
 def parallelAnalysis(flatFields, repetitions):
@@ -16,10 +16,12 @@ def parallelAnalysis(flatFields, repetitions):
         keepTrack[:][i-1] = D1
     keepTrack = keepTrack.transpose()
 
+
     mean_flat_fields_EFF = np.mean(flatFields, 1)
     F = flatFields - np.transpose([mean_flat_fields_EFF] * flatFields.shape[1])
     cov2 = np.cov(F, rowvar=False)
-    D1, V1 = np.linalg.eigh(cov2)
+    #D1, V1 = np.linalg.eig(cov2)
+    D1, V1 = scipy.linalg.eigh(cov2)
 
     selection = np.zeros((1, flatFields.shape[1]))
     # selection(D1>(tmp3)) = 1

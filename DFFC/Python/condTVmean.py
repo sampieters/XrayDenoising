@@ -18,12 +18,11 @@ def condTVmean(projections, meanFF, FF, DF, x, DS):
     meanFF = imresize.imresize(meanFF, 1/DS)
     FF2 = np.zeros((FF.shape[0], meanFF.shape[0], meanFF.shape[1]))
     for i in range(0, FF.shape[0]):
-        h = imresize.imresize(FF[:][:][i], 1/DS)
         FF2[:][:][i] = imresize.imresize(FF[:][:][i], 1/DS)
     FF = FF2
     DF = imresize.imresize(DF, 1/DS)
     func = lambda X: fun(projections, meanFF, FF, DF, X)
-    xNew = optimize.minimize(func, x)
+    xNew = optimize.fmin(func, x)
     return xNew
 
 

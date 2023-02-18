@@ -163,9 +163,6 @@ if __name__ == '__main__':
     for i in range(1, len(nrImage)+1):
         print(f"Estimation projection {str(i)}/{str(len(nrImage))}...")
         projection = imread(readDIR + prefixProj + f'{nrImage[i - 1]:{numType}}' + fileFormat)
-        ##################################
-        # TODO: Checked until this point #
-        ##################################
 
         x = condTVmean.condTVmean(projection, EigenFlatfields[:][:][0], filteredEigenFlatfields[:][:][1:(1+nrEigenflatfields)], meanDarkfield, np.zeros((1, nrEigenflatfields)), downsample)
         xArray[:][i-1] = x
