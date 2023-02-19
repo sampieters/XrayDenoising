@@ -101,17 +101,15 @@ if __name__ == '__main__':
 
     print("Parallel Analysis:")
     V1, D1, nrEigenflatfields = parallelAnalysis.parallelAnalysis(Data, nrPArepetions)
+
     print(f"{str(nrEigenflatfields)} eigen flat fields selected.")
 
     eig0 = np.reshape(mn, dims, order='F')
     EigenFlatfields = np.zeros((nrEigenflatfields+1, eig0.shape[0], eig0.shape[1]))
     EigenFlatfields[:][:][0] = eig0
-    # TODO: There is happening something wrong in these two loops somewhere
-    # TODO: In the first loop the matrix signs is inverted
+    # TODO: Something wrong here, the signs are sometimes different and sometimes not
     for i in range(0, nrEigenflatfields):
-        print(f"HELP {N-i}")
-        whut = np.reshape(np.matmul(Data, V1[:, N-i-1]), dims, order='F')
-        EigenFlatfields[:][:][i+1] = whut
+        EigenFlatfields[:][:][i+1] = np.reshape(Data @ V1[:, N-i-1], dims, order='F')
     del Data
 
     print("Filter eigen flat fields...")
@@ -123,7 +121,7 @@ if __name__ == '__main__':
         max = np.max(EigenFlatfields[:][:][i])
         tmp = (EigenFlatfields[:][:][i] - min) / (max - min)
         tmp2 = bm3d.bm3d(tmp, 1)
-        filteredEigenFlatfields[:][:][i] = (tmp2 * max) - min + min
+        filteredEigenFlatfields[:][:][i] = (tmp2 * (max - min)) + min
 
     meanVector = np.zeros(len(nrImage))
 
@@ -172,7 +170,7 @@ if __name__ == '__main__':
             FFeff = FFeff + x[j] * filteredEigenFlatfields[:][:][j+1]
 
         tmp = np.divide((np.squeeze(projection) - meanDarkfield), (EigenFlatfields[:][:][0] + FFeff))
-        tmp = tmp / np.mean(tmp[:]) * meanVector[i-1]
+        tmp = (tmp / np.mean(tmp[:])) * meanVector[i-1]
 
         # TODO: Seems redundant
         for x in range(0, tmp.shape[0]):
