@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import parallelAnalysis
 from PIL import Image as im
 
 #################################################
@@ -32,9 +31,6 @@ firstProj =          321            # image number of first projection
 # options output images
 scaleOutputImages =  [0, 2]         # output images are scaled between these values
 
-# algorithm parameters
-nrPArepetions =      10             # number of parallel analysis repetitions
-
 #################################################
 # CODE
 #################################################
@@ -62,7 +58,6 @@ if __name__ == '__main__':
     dark = np.zeros((nrDark, dims[0], dims[1]))
     for i in range(firstDark - 1, firstDark + nrDark - 1):
         dark[:][:][i] = imread(readDIR + prefixProj + f'{i+1:{numType}}' + fileFormat)
-
     # Get the mean (sum of all elements divided by the dimensions)
     meanDarkfield = np.mean(dark, 0)
 
@@ -83,48 +78,19 @@ if __name__ == '__main__':
 
     # subtract mean flat field
     N, M = flat.shape
-    Data = flat - np.tile(mn, (N, 1))
-    Data = Data.transpose()
-    del dark, flat
-
-    print("Parallel Analysis:")
-    V1, D1, nrEigenflatfields = parallelAnalysis.parallelAnalysis(Data, nrPArepetions)
-    print(f"{str(nrEigenflatfields)} eigen flat fields selected.")
-
+    Data = (flat - np.tile(mn, (N, 1))).transpose()
     eig0 = np.reshape(mn, dims, order='F')
-    EigenFlatfields = np.zeros((nrEigenflatfields+1, eig0.shape[0], eig0.shape[1]))
-    EigenFlatfields[:][:][0] = eig0
-    for i in range(0, nrEigenflatfields):
-        whut = np.reshape(np.matmul(Data, V1[:, N-i-1]), dims, order='F')
-        EigenFlatfields[:][:][i+1] = whut
-    del Data
+    del dark, flat, Data
 
-    meanVector = np.zeros(len(nrImage))
     for i in range(1, len(nrImage)+1):
         print(f'Conventional FFC: {str(i)}/{str(len(nrImage))}...')
         # Load projection
         projection = imread(readDIR + prefixProj + f'{nrImage[i-1]:{numType}}' + fileFormat)
+        tmp = np.divide((np.squeeze(projection) - meanDarkfield), eig0)
 
-        tmp = np.divide((np.squeeze(projection) - meanDarkfield), EigenFlatfields[:][:][0])
-        meanVector[i-1] = np.mean(tmp[:])
-
-        for x in range(0, tmp.shape[0]):
-            for y in range(0, tmp.shape[1]):
-                if tmp[x][y] < 0:
-                    tmp[x][y] = 0
-
+        tmp[tmp < 0] = 0
         tmp = -np.log(tmp)
-
-        for x in range(0, tmp.shape[0]):
-            for y in range(0, tmp.shape[1]):
-                if tmp[x][y] < 0:
-                    tmp[x][y] = 0
-
-        hulp = np.isinf(tmp)
-        for x in range(0, tmp.shape[0]):
-            for y in range(0, tmp.shape[1]):
-                if hulp[x][y] is True:
-                    tmp[x][y] = 10 ** 5
+        tmp[np.isinf(tmp)] = 10 ** 5
 
         tmp = (tmp - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
         tmp = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)

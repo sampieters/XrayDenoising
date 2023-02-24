@@ -4,6 +4,10 @@ import condTVmean
 import numpy as np
 import parallelAnalysis
 from PIL import Image as im
+import scipy
+mat = scipy.io.loadmat('parallel.mat')
+
+#TOMOPY VOOR GENERATING IMAGES
 
 #################################################
 # PARAMETERS
@@ -101,6 +105,8 @@ if __name__ == '__main__':
 
     print("Parallel Analysis:")
     V1, D1, nrEigenflatfields = parallelAnalysis.parallelAnalysis(Data, nrPArepetions)
+    V1 = mat['V1']
+    D1 = mat['D1']
 
     print(f"{str(nrEigenflatfields)} eigen flat fields selected.")
 
@@ -109,6 +115,8 @@ if __name__ == '__main__':
     EigenFlatfields[:][:][0] = eig0
     # TODO: Something wrong here, the signs are sometimes different and sometimes not
     for i in range(0, nrEigenflatfields):
+        whut0 = Data @ V1[:, N-i-1]
+        whut = np.reshape(whut0, dims, order="F")
         EigenFlatfields[:][:][i+1] = np.reshape(Data @ V1[:, N-i-1], dims, order='F')
     del Data
 
@@ -120,7 +128,7 @@ if __name__ == '__main__':
         min = np.min(EigenFlatfields[:][:][i])
         max = np.max(EigenFlatfields[:][:][i])
         tmp = (EigenFlatfields[:][:][i] - min) / (max - min)
-        tmp2 = bm3d.bm3d(tmp, 1)
+        tmp2 = bm3d.bm3d(tmp, 25/255)
         filteredEigenFlatfields[:][:][i] = (tmp2 * (max - min)) + min
 
     meanVector = np.zeros(len(nrImage))
