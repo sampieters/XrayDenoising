@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import scipy as sp
 from PIL import Image as im
 
 #################################################
@@ -7,9 +8,9 @@ from PIL import Image as im
 #################################################
 
 # Directory with raw dark fields, flat fields and projections in .tif format
-readDIR = '../../input/'
+readDIR = './input/'
 # Directory for the output files
-outDIR = '../../output/'
+outDIR = './output/'
 
 # file names
 prefixProj =         'dbeer_5_5_'   # prefix of the original projections
@@ -61,39 +62,16 @@ if __name__ == '__main__':
     # Get the mean (sum of all elements divided by the dimensions)
     meanDarkfield = np.mean(dark, 0)
 
-    # Make an m*n*p matrix to store all the flat fields and get the mean value
-    # The algorithm combines the prior and post flat fields and gets the mean from this combination
-    print('Load white fields...')
-    flat = np.zeros((nrWhitePrior + nrWhitePost, dims[0] * dims[1]))
-    k = 0
-    for i in range(firstWhitePrior, firstWhitePrior + nrWhitePrior):
-        tmp = imread(readDIR + prefixFlat + f'{i:{numType}}' + fileFormat) - meanDarkfield
-        flat[:][k] = np.reshape(tmp, -1, 'F') - np.reshape(meanDarkfield, -1, 'F')
-        k += 1
-    for i in range(firstWhitePost, firstWhitePost + nrWhitePost):
-        tmp = imread(readDIR + prefixFlat + f'{i:{numType}}' + fileFormat) - meanDarkfield
-        flat[:][k] = np.reshape(tmp, -1, 'F') - np.reshape(meanDarkfield, -1, 'F')
-        k += 1
-    mn = np.mean(flat, 0)
+    print("Load one flat field...")
+    f_j = imread(readDIR + prefixFlat + f'{firstWhitePrior:{numType}}' + fileFormat)
 
-    # subtract mean flat field
-    N, M = flat.shape
-    Data = (flat - np.tile(mn, (N, 1))).transpose()
-    eig0 = np.reshape(mn, dims, order='F')
-    del dark, flat, Data
+    print("Get the \"perfect\" image...")
+    n_j = imread("./output/FFC0321.tif")
 
-    for i in range(1, len(nrImage)+1):
-        print(f'Conventional FFC: {str(i)}/{str(len(nrImage))}...')
-        # Load projection
-        projection = imread(readDIR + prefixProj + f'{nrImage[i-1]:{numType}}' + fileFormat)
-        # used to be np.divide instead of '/', check if this does the same
-        # why not eig0 - meanDarkfield?
-        tmp = (np.squeeze(projection) - meanDarkfield) / eig0
+    print("Calculate noisy image...")
+    n_j = (n_j - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
+    n_j = np.squeeze(n_j)
+    p_j = np.exp(-n_j, dtype=np.float128) * f_j
 
-        tmp[tmp < 0] = 0
-        tmp = -np.log(tmp)
-        tmp[np.isinf(tmp)] = 10 ** 5
-
-        tmp = (tmp - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
-        tmp = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)
-        imwrite(tmp, outDIR + outPrefixFFC + f'{nrImage[i - 1]:{numType}}' + fileFormat)
+    p_j = np.round((2 ** 16 - 1) * p_j).astype(np.uint16)
+    imwrite(p_j, "./test.tif")

@@ -49,10 +49,6 @@ firstProj=          321;            % image number of first projection
 % options output images
 scaleOutputImages=  [0 2];          %output images are scaled between these values
 
-% algorithm parameters
-nrPArepetions=      10;             % number of parallel analysis repetions
-
-
 %% load dark and white fields
 mkdir(outDIRFFC)
 
@@ -91,22 +87,8 @@ mn = mean(whiteVec,2);
 [M,N] = size(whiteVec);
 hulp = repmat(mn, 1,N);
 Data = whiteVec - repmat(mn,1,N);
-clear whiteVec dark
-
-%% calculate Eigen Flat fields
-% Parallel Analysis
-display('Parallel Analysis:')
-[V1, D1, nrEigenflatfields]=parallelAnalysis(Data,nrPArepetions);
-display([int2str(nrEigenflatfields) ' eigen flat fields selected.'])
-
-%calculation eigen flat fields
 eig0 = reshape(mn,dims);
-EigenFlatfields(:,:,1) = eig0;
-for ii=1:nrEigenflatfields
-    EigenFlatfields(:,:,ii+1) = reshape(Data*V1(:,N-ii+1),dims);
-end
-
-clear Data
+clear whiteVec dark Data
 
 %% estimate abundance of weights in projections
 meanVector=zeros(1,length(nrImage));
@@ -115,7 +97,7 @@ for ii=1:length(nrImage)
     %load projection
     projection=double(imread([readDIR prefixProj num2str(nrImage(ii),numType) fileFormat]));
     
-    tmp=(squeeze(projection)-meanDarkfield)./(EigenFlatfields(:,:,1));
+    tmp=(squeeze(projection)-meanDarkfield)./ eig0;
     meanVector(ii)=mean(tmp(:));
     
     tmp(tmp<0)=0;

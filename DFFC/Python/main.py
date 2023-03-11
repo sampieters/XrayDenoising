@@ -1,13 +1,8 @@
-import os
 import bm3d
 import condTVmean
 import numpy as np
 import parallelAnalysis
 from PIL import Image as im
-import scipy
-mat = scipy.io.loadmat('parallel.mat')
-
-#TOMOPY VOOR GENERATING IMAGES
 
 #################################################
 # PARAMETERS
@@ -17,15 +12,10 @@ mat = scipy.io.loadmat('parallel.mat')
 readDIR = '../../input/'
 # Directory for the output files
 outDIR = '../../output/'
-# Directory where the DYNAMIC flat field corrected projections are saved
-outDIRDFFC = './DFFC/'
-# Directory where the CONVENTIONAL flat field corrected projections are saved
-outDIRFFC = './FFC/'
 
 # file names
 prefixProj =         'dbeer_5_5_'   # prefix of the original projections
-outPrefixDFFC =      'DFFC'         # prefix of the DYNAMIC flat field corrected projections
-outPrefixFFC =       'FFC'          # prefix of the CONVENTIONAL flat field corrected projections
+outPrefixDFFC =      'DFFC'         # prefix of the dynamic flat field corrected projections
 prefixFlat =         'dbeer_5_5_'   # prefix of the flat fields
 prefixDark =         'dbeer_5_5_'   # prefix of the dark fields
 numType =            '04d'         # number type used in image names
@@ -58,14 +48,6 @@ def imwrite(matrix, path):
     im.fromarray(matrix).save(path)
 
 if __name__ == '__main__':
-    # Make the output directories
-    if not os.path.exists(outDIRFFC):
-        os.mkdir(outDIRDFFC)
-    if not os.path.exists(outDIR):
-        os.mkdir(outDIR)
-    if not os.path.exists(outDIRFFC):
-        os.mkdir(outDIRFFC)
-
     # Get a list of all projection indices and get the dimensions of a .tif image (because they are all the same,
     # get the dimensions of the first image)
     nrImage = np.arange(firstProj, firstProj+nrProj)
@@ -105,18 +87,13 @@ if __name__ == '__main__':
 
     print("Parallel Analysis:")
     V1, D1, nrEigenflatfields = parallelAnalysis.parallelAnalysis(Data, nrPArepetions)
-    V1 = mat['V1']
-    D1 = mat['D1']
 
     print(f"{str(nrEigenflatfields)} eigen flat fields selected.")
 
     eig0 = np.reshape(mn, dims, order='F')
     EigenFlatfields = np.zeros((nrEigenflatfields+1, eig0.shape[0], eig0.shape[1]))
     EigenFlatfields[:][:][0] = eig0
-    # TODO: Something wrong here, the signs are sometimes different and sometimes not
     for i in range(0, nrEigenflatfields):
-        whut0 = Data @ V1[:, N-i-1]
-        whut = np.reshape(whut0, dims, order="F")
         EigenFlatfields[:][:][i+1] = np.reshape(Data @ V1[:, N-i-1], dims, order='F')
     del Data
 
@@ -132,43 +109,12 @@ if __name__ == '__main__':
         filteredEigenFlatfields[:][:][i] = (tmp2 * (max - min)) + min
 
     meanVector = np.zeros(len(nrImage))
-
-    for i in range(1, len(nrImage)+1):
-        print(f'Conventional FFC: {str(i)}/{str(len(nrImage))}...')
-        # Load projection
-        projection = imread(readDIR + prefixProj + f'{nrImage[i-1]:{numType}}' + fileFormat)
-
-        tmp = np.divide((np.squeeze(projection) - meanDarkfield), EigenFlatfields[:][:][0])
-        meanVector[i-1] = np.mean(tmp[:])
-
-        # TODO: Seems redundant
-        for x in range(0, tmp.shape[0]):
-            for y in range(0, tmp.shape[1]):
-                if tmp[x][y] < 0:
-                    tmp[x][y] = 0
-
-        tmp = -np.log(tmp)
-
-        #TODO: after the log it fixes the bug but before it does nothing
-        for x in range(0, tmp.shape[0]):
-            for y in range(0, tmp.shape[1]):
-                if tmp[x][y] < 0:
-                    tmp[x][y] = 0
-
-        # TODO: Seems redundant, the provided dataset has no case for this
-        hulp = np.isinf(tmp)
-        for x in range(0, tmp.shape[0]):
-            for y in range(0, tmp.shape[1]):
-                if hulp[x][y] is True:
-                    tmp[x][y] = 10 ** 5
-
-        tmp = (tmp - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
-        tmp = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)
-        imwrite(tmp, outDIRFFC + outPrefixFFC + f'{nrImage[i - 1]:{numType}}' + fileFormat)
     xArray = np.zeros((len(nrImage), nrEigenflatfields))
     for i in range(1, len(nrImage)+1):
         print(f"Estimation projection {str(i)}/{str(len(nrImage))}...")
         projection = imread(readDIR + prefixProj + f'{nrImage[i - 1]:{numType}}' + fileFormat)
+        tmp = np.divide((np.squeeze(projection) - meanDarkfield), EigenFlatfields[:][:][0])
+        meanVector[i-1] = np.mean(tmp[:])
 
         x = condTVmean.condTVmean(projection, EigenFlatfields[:][:][0], filteredEigenFlatfields[:][:][1:(1+nrEigenflatfields)], meanDarkfield, np.zeros((1, nrEigenflatfields)), downsample)
         xArray[:][i-1] = x
@@ -180,21 +126,10 @@ if __name__ == '__main__':
         tmp = np.divide((np.squeeze(projection) - meanDarkfield), (EigenFlatfields[:][:][0] + FFeff))
         tmp = (tmp / np.mean(tmp[:])) * meanVector[i-1]
 
-        # TODO: Seems redundant
-        for x in range(0, tmp.shape[0]):
-            for y in range(0, tmp.shape[1]):
-                if tmp[x][y] < 0:
-                    tmp[x][y] = 0
-
+        tmp[tmp < 0] = 0
         tmp = -np.log(tmp)
-
-        # TODO: Seems redundant
-        hulp = np.isinf(tmp)
-        for x in range(0, tmp.shape[0]):
-            for y in range(0, tmp.shape[1]):
-                if hulp[x][y] is True:
-                    tmp[x][y] = 10 ** 5
+        tmp[np.isinf(tmp)] = 10 ** 5
 
         tmp = (tmp - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
         tmp = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)
-        imwrite(tmp, outDIRDFFC + outPrefixDFFC + f'{nrImage[i - 1]:{numType}}' + fileFormat)
+        imwrite(tmp, outDIR + outPrefixDFFC + f'{nrImage[i - 1]:{numType}}' + fileFormat)
