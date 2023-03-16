@@ -56,12 +56,10 @@ class Data:
         # Convert the grayscale image to 16-bit
         converted_image = grayscale_image.convert('I;16')
         # Save the image as a TIFF file
-        converted_image.save('../AEinput/clean2.tif')
+        l = np.asarray(converted_image)
+        l = np.round(l).astype(np.uint16)
+        imwrite(l, "../AEinput/clean2.tif")
 
-
-
-        #image = im.open("../AEinput/clean2.png")
-        #image.save("../AEinput/clean2.tif", bytes=np.uint16)
         n_j = imread("../AEinput/clean2.tif")
         dims = n_j.shape
 
