@@ -48,7 +48,21 @@ class Data:
         # Get a list of all projection indices and get the dimensions of a .tif image (because they are all the same,
         # get the dimensions of the first image)
         print("Get the \"perfect\" image...")
-        n_j = imread("../output/DFFC0321.tif")
+
+        # Open the PNG image
+        png_image = im.open('../AEinput/clean2.png')
+        # Convert the image to grayscale
+        grayscale_image = png_image.convert('L')
+        # Convert the grayscale image to 16-bit
+        converted_image = grayscale_image.convert('I;16')
+        # Save the image as a TIFF file
+        converted_image.save('../AEinput/clean2.tif')
+
+
+
+        #image = im.open("../AEinput/clean2.png")
+        #image.save("../AEinput/clean2.tif", bytes=np.uint16)
+        n_j = imread("../AEinput/clean2.tif")
         dims = n_j.shape
 
         # Make an m*n*p matrix to store all the dark fields and get the mean value
