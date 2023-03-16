@@ -10,6 +10,7 @@ else:
   print('Running on the CPU')
 
 
+
 class Encoder(nn.model):
     def __init__(self):
         super(Encoder, self).__init__()
