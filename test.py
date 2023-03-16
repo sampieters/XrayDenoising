@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import scipy as sp
 from PIL import Image as im
 
 #################################################
@@ -66,12 +65,14 @@ if __name__ == '__main__':
     f_j = imread(readDIR + prefixFlat + f'{firstWhitePrior:{numType}}' + fileFormat)
 
     print("Get the \"perfect\" image...")
-    n_j = imread("./output/FFC0321.tif")
-
+    n_j = imread("./output/DFFC0321.tif")
     print("Calculate noisy image...")
-    n_j = (n_j - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
-    n_j = np.squeeze(n_j)
-    p_j = np.exp(-n_j, dtype=np.float128) * f_j
 
+    p_j = n_j * (f_j - meanDarkfield) + meanDarkfield
+    p_j[p_j < 0] = 0
+    p_j = -np.log(p_j)
+    p_j[np.isinf(p_j)] = 10 ** 5
+    p_j = (p_j - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
+    #p_j = (p_j - scaleOutputImages[1]) / (scaleOutputImages[0] - scaleOutputImages[1])
     p_j = np.round((2 ** 16 - 1) * p_j).astype(np.uint16)
-    imwrite(p_j, "./test.tif")
+    imwrite(p_j, "./simulate_noisy.tif")
