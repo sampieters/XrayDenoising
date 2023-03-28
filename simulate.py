@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from PIL import Image as im
-from phantominator import shepp_logan
+from phantominator import shepp_logan, dynamic, mr_ellipsoid_parameters
 
 # Directory with raw dark fields, flat fields and projections in .tif format
 readDIR = './input/noisy/real_0/'
@@ -28,7 +28,7 @@ in_dir = "./input/pngs/"
 out_dir = "./input/perfect/"
 output_dir = "./input/noisy/"
 amount = 0
-generated = 10
+generated = 1
 variations = 20
 type = '{0:04d}'
 
@@ -71,32 +71,42 @@ def simulate_noisy(clean, out_path):
     # Get the mean (sum of all elements divided by the dimensions)
     meanDarkfield = np.mean(dark, 0)
 
-    print("Load one flat field...")
-    for i in range(0, variations):
-        choice = np.random.randint(firstWhitePrior, firstWhitePrior + nrWhitePrior)
-
-        f_j = imread(readDIR + prefixFlat + f'{choice:{numType}}' + fileFormat)
-        print("Calculate noisy image...")
+    print("Load all possible flat fields...")
+    # This loop is merging the perfect projection with one prior white field
+    print("Generated noisy image (based on prior white fields)...")
+    for i in range(nrWhitePrior):
+        f_j = imread(readDIR + prefixFlat + f'{firstWhitePrior + i:{numType}}' + fileFormat)
         p_j = n_j * (f_j - meanDarkfield) + meanDarkfield
         p_j = np.round(p_j).astype(np.uint16)
         imwrite(p_j, out_path + f"noisy_{i}.tif")
 
+    # This loop is merging the perfect projection with one post white field
+    print("Generated noisy image (based on post white fields)...")
+    for i in range(nrWhitePost):
+        f_j = imread(readDIR + prefixFlat + f'{firstWhitePost + i:{numType}}' + fileFormat)
+        p_j = n_j * (f_j - meanDarkfield) + meanDarkfield
+        p_j = np.round(p_j).astype(np.uint16)
+        imwrite(p_j, out_path + f"noisy_{nrWhitePrior + i}.tif")
+
+
 # Loop over all pngs and convert them to tiff files
-for i in range(1, amount+1):
+for i in range(0, amount):
     png_to_tif(in_dir + f'perfect_{type.format(i)}.png', out_dir + f'perfect_{type.format(i)}.tif')
     img = imread(readDIR + prefixFlat + f'{type.format(i)}' + fileFormat)
 
 # Also generate some images if not enough
-for i in range(amount+1, generated+2):
-    ph = shepp_logan((256, 1248))
-    ph = np.round(((2 ** 16 - 1) * ph)).astype(np.uint16)
-    imwrite(ph, out_dir + f'perfect_{type.format(i)}.tif')
+generated = 10
+ph = shepp_logan((generated, 256, 1248))
+for i in range(amount, generated):
+    slice = ph[:][:][i]
+    slice = np.round(((2 ** 16 - 1) * slice)).astype(np.uint16)
+    imwrite(slice, out_dir + f'perfect_{type.format(i)}.tif')
 
 # Generate noisy images
-for i in range(1, amount + generated + 1):
-    if not os.path.exists(output_dir + f'{i - 1}'):
-        os.mkdir(output_dir + f'{i - 1}')
-    simulate_noisy(out_dir + f'perfect_{type.format(i)}.tif', output_dir + f'{i - 1}/')
+for i in range(0, amount + generated):
+    if not os.path.exists(output_dir + f'{i}'):
+        os.mkdir(output_dir + f'{i}')
+    simulate_noisy(out_dir + f'perfect_{type.format(i)}.tif', output_dir + f'{i}/')
 
 
 
