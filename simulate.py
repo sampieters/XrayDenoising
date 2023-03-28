@@ -1,0 +1,115 @@
+import numpy as np
+import os
+from PIL import Image as im
+from phantominator import shepp_logan
+
+# Directory with raw dark fields, flat fields and projections in .tif format
+readDIR = './input/noisy/real_0/'
+# Directory for the output files
+outDIR = './output/'
+
+# file names
+prefixProj =         'dbeer_5_5_'   # prefix of the original projections
+prefixFlat =         'dbeer_5_5_'   # prefix of the flat fields
+prefixDark =         'dbeer_5_5_'   # prefix of the dark fields
+numType =            '04d'         # number type used in image names
+fileFormat =         '.tif'         # image format
+
+nrDark =             20             # number of dark fields
+firstDark =          1              # image number of first dark field
+nrWhitePrior =       300            # number of white (flat) fields BEFORE acquiring the projections
+firstWhitePrior =    21             # image number of first prior flat field
+nrWhitePost =        300            # number of white (flat) fields AFTER acquiring the projections
+firstWhitePost =     572            # image number of first post flat field
+nrProj =             50        	    # number of acquired projections
+firstProj =          321            # image number of first projection
+
+in_dir = "./input/pngs/"
+out_dir = "./input/perfect/"
+output_dir = "./input/noisy/"
+amount = 0
+generated = 10
+variations = 20
+type = '{0:04d}'
+
+
+def imread(path):
+    image = im.open(path)
+    return np.asarray(image)
+
+
+def imwrite(matrix, path):
+    im.fromarray(matrix).save(path)
+
+
+def png_to_tif(input_path, output_path):
+    # Load the png file
+    image = imread(input_path)
+
+    # Convert to uint16 and scale values between 0 and 65535
+    image = image.astype('uint16')
+    image = ((image / image.max()) * (2 ** 16 - 1)).astype('uint16')
+    if image.shape[1] == 3:
+        image = image[:, :, 0]
+    # Save as tiff file
+    imwrite(image, output_path)
+
+
+def simulate_noisy(clean, out_path):
+    # Get a list of all projection indices and get the dimensions of a .tif image (because they are all the same,
+    # get the dimensions of the first image)
+    print("Get the \"perfect\" image...")
+    n_j = imread(clean)
+    n_j = n_j / (2 ** 16 - 1)
+    dims = n_j.shape
+
+    # Make an m*n*p matrix to store all the dark fields and get the mean value
+    print("Load dark fields...")
+    dark = np.zeros((nrDark, dims[0], dims[1]))
+    for i in range(firstDark - 1, firstDark + nrDark - 1):
+        dark[:][:][i] = imread(readDIR + prefixProj + f'{i + 1:{numType}}' + fileFormat)
+    # Get the mean (sum of all elements divided by the dimensions)
+    meanDarkfield = np.mean(dark, 0)
+
+    print("Load one flat field...")
+    for i in range(0, variations):
+        choice = np.random.randint(firstWhitePrior, firstWhitePrior + nrWhitePrior)
+
+        f_j = imread(readDIR + prefixFlat + f'{choice:{numType}}' + fileFormat)
+        print("Calculate noisy image...")
+        p_j = n_j * (f_j - meanDarkfield) + meanDarkfield
+        p_j = np.round(p_j).astype(np.uint16)
+        imwrite(p_j, out_path + f"noisy_{i}.tif")
+
+# Loop over all pngs and convert them to tiff files
+for i in range(1, amount+1):
+    png_to_tif(in_dir + f'perfect_{type.format(i)}.png', out_dir + f'perfect_{type.format(i)}.tif')
+    img = imread(readDIR + prefixFlat + f'{type.format(i)}' + fileFormat)
+
+# Also generate some images if not enough
+for i in range(amount+1, generated+2):
+    ph = shepp_logan((256, 1248))
+    ph = np.round(((2 ** 16 - 1) * ph)).astype(np.uint16)
+    imwrite(ph, out_dir + f'perfect_{type.format(i)}.tif')
+
+# Generate noisy images
+for i in range(1, amount + generated + 1):
+    if not os.path.exists(output_dir + f'{i - 1}'):
+        os.mkdir(output_dir + f'{i - 1}')
+    simulate_noisy(out_dir + f'perfect_{type.format(i)}.tif', output_dir + f'{i - 1}/')
+
+
+
+
+
+def RMSE():
+    clean = imread('./input/perfect/perfect_0001.tif')
+    d = imread('./input/noisy/0/noisy_0.tif')
+
+    mse = 0
+    for x in range(clean.shape[0]):
+        for y in range(clean.shape[1]):
+            n = clean.shape[0] * clean.shape[1]
+            mse += ((d[x][y] - clean[x][y]) ** 2) / n
+    rmse = np.sqrt(mse)
+    return rmse

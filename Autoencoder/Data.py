@@ -4,6 +4,7 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as im
+import imageio
 
 # Directory with raw dark fields, flat fields and projections in .tif format
 readDIR = '../input/'
@@ -44,23 +45,24 @@ class Data:
         # Create training and test dataloaders
         # TODO: https://stackoverflow.com/questions/53998282/how-does-the-number-of-workers-parameter-in-pytorch-dataloader-actually-work
         self.num_workers = 0
-    def simulate_noisy(self):
+
+    def png_to_tif(self, input_path, output_path):
+        # Load the png file
+        image = imread(input_path)
+
+        # Convert to uint16 and scale values between 0 and 65535
+        image = image.astype('uint16')
+        image = ((image / image.max()) * 65535).astype('uint16')
+        image = image[:, :, 0]
+        # Save as tiff file
+        imwrite(image, output_path)
+
+    def simulate_noisy(self, clean, out_path):
         # Get a list of all projection indices and get the dimensions of a .tif image (because they are all the same,
         # get the dimensions of the first image)
         print("Get the \"perfect\" image...")
-
-        # Open the PNG image
-        png_image = im.open('../AEinput/clean2.png')
-        # Convert the image to grayscale
-        grayscale_image = png_image.convert('L')
-        # Convert the grayscale image to 16-bit
-        converted_image = grayscale_image.convert('I;16')
-        # Save the image as a TIFF file
-        l = np.asarray(converted_image)
-        l = np.round(l).astype(np.uint16)
-        imwrite(l, "../AEinput/clean2.tif")
-
-        n_j = imread("../AEinput/clean2.tif")
+        n_j = imread(clean)
+        n_j = n_j / (2 ** 16 - 1)
         dims = n_j.shape
 
         # Make an m*n*p matrix to store all the dark fields and get the mean value
@@ -76,13 +78,8 @@ class Data:
 
         print("Calculate noisy image...")
         p_j = n_j * (f_j - meanDarkfield) + meanDarkfield
-        p_j[p_j < 0] = 0
-        p_j = -np.log(p_j)
-        p_j[np.isinf(p_j)] = 10 ** 5
-        p_j = (p_j - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
-        # p_j = (p_j - scaleOutputImages[1]) / (scaleOutputImages[0] - scaleOutputImages[1])
-        p_j = np.round((2 ** 16 - 1) * p_j).astype(np.uint16)
-        imwrite(p_j, "./simulate_noisy.tif")
+        p_j = np.round(p_j).astype(np.uint16)
+        imwrite(p_j, out_path)
 
     def read_from_link(self):
         # convert data (PIL image or ndarray) to torch.FloatTensor
@@ -121,5 +118,7 @@ class Data:
         plt.imshow(np.transpose(npimg))
         plt.show()
 
+
 test = Data()
-test.simulate_noisy()
+test.png_to_tif("../AEinput/clean2.png", "../AEinput/clean2.tif")
+test.simulate_noisy("../AEinput/clean2.tif", "./simulate_noisy.tif")
