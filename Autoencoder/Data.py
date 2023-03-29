@@ -4,32 +4,6 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as im
-import imageio
-
-# Directory with raw dark fields, flat fields and projections in .tif format
-readDIR = '../input/'
-# Directory for the output files
-outDIR = '../output/'
-
-# file names
-prefixProj =         'dbeer_5_5_'   # prefix of the original projections
-outPrefixFFC =       'FFC'          # prefix of the CONVENTIONAL flat field corrected projections
-prefixFlat =         'dbeer_5_5_'   # prefix of the flat fields
-prefixDark =         'dbeer_5_5_'   # prefix of the dark fields
-numType =            '04d'         # number type used in image names
-fileFormat =         '.tif'         # image format
-
-nrDark =             20             # number of dark fields
-firstDark =          1              # image number of first dark field
-nrWhitePrior =       300            # number of white (flat) fields BEFORE acquiring the projections
-firstWhitePrior =    21             # image number of first prior flat field
-nrWhitePost =        300            # number of white (flat) fields AFTER acquiring the projections
-firstWhitePost =     572            # image number of first post flat field
-nrProj =             50        	    # number of acquired projections
-firstProj =          321            # image number of first projection
-
-# options output images
-scaleOutputImages =  [0, 2]         # output images are scaled between these values
 
 def imread(path):
     image = im.open(path)
@@ -41,45 +15,10 @@ def imwrite(matrix, path):
 class Data:
     def __init__(self):
         # how many samples per batch to load
-        self.batch_size = 3
+        self.batch_size = 64
         # Create training and test dataloaders
         # TODO: https://stackoverflow.com/questions/53998282/how-does-the-number-of-workers-parameter-in-pytorch-dataloader-actually-work
         self.num_workers = 0
-
-    def png_to_tif(self, input_path, output_path):
-        # Load the png file
-        image = imread(input_path)
-
-        # Convert to uint16 and scale values between 0 and 65535
-        image = image.astype('uint16')
-        image = ((image / image.max()) * 65535).astype('uint16')
-        image = image[:, :, 0]
-        # Save as tiff file
-        imwrite(image, output_path)
-
-    def simulate_noisy(self, clean, out_path):
-        # Get a list of all projection indices and get the dimensions of a .tif image (because they are all the same,
-        # get the dimensions of the first image)
-        print("Get the \"perfect\" image...")
-        n_j = imread(clean)
-        n_j = n_j / (2 ** 16 - 1)
-        dims = n_j.shape
-
-        # Make an m*n*p matrix to store all the dark fields and get the mean value
-        print("Load dark fields...")
-        dark = np.zeros((nrDark, dims[0], dims[1]))
-        for i in range(firstDark - 1, firstDark + nrDark - 1):
-            dark[:][:][i] = imread(readDIR + prefixProj + f'{i + 1:{numType}}' + fileFormat)
-        # Get the mean (sum of all elements divided by the dimensions)
-        meanDarkfield = np.mean(dark, 0)
-
-        print("Load one flat field...")
-        f_j = imread(readDIR + prefixFlat + f'{firstWhitePrior:{numType}}' + fileFormat)
-
-        print("Calculate noisy image...")
-        p_j = n_j * (f_j - meanDarkfield) + meanDarkfield
-        p_j = np.round(p_j).astype(np.uint16)
-        imwrite(p_j, out_path)
 
     def read_from_link(self):
         # convert data (PIL image or ndarray) to torch.FloatTensor
@@ -98,11 +37,11 @@ class Data:
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size, num_workers=self.num_workers)
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size, num_workers=self.num_workers)
 
-    def read_from_folder(self):
+    def read_from_folder(self, folder):
         transform = transforms.Compose([transforms.ToTensor()])
 
-        trainset = torchvision.datasets.ImageFolder(root='../AEinput', transform=transform)
-        testset = torchvision.datasets.ImageFolder(root='../AEinput', transform=transform)
+        trainset = torchvision.datasets.ImageFolder(root=folder, transform=transform)
+        testset = torchvision.datasets.ImageFolder(root=folder, transform=transform)
 
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size, num_workers=self.num_workers)
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size, num_workers=self.num_workers)
@@ -117,8 +56,3 @@ class Data:
         npimg = img.numpy()
         plt.imshow(np.transpose(npimg))
         plt.show()
-
-
-test = Data()
-test.png_to_tif("../AEinput/clean2.png", "../AEinput/clean2.tif")
-test.simulate_noisy("../AEinput/clean2.tif", "./simulate_noisy.tif")
