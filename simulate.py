@@ -25,7 +25,7 @@ nrProj =             50        	    # number of acquired projections
 firstProj =          321            # image number of first projection
 
 in_dir = "./input/pngs/"
-out_dir = "./input/perfect/"
+out_dir = "./input/perfect/perfect/"
 output_dir = "./input/noisy/"
 amount = 0
 generated = 1
@@ -113,7 +113,7 @@ for i in range(0, amount + generated):
 
 
 def RMSE():
-    clean = imread('./input/perfect/perfect_0001.tif')
+    clean = imread('input/perfect/perfect/perfect_0001.tif')
     d = imread('./input/noisy/0/noisy_0.tif')
 
     mse = 0

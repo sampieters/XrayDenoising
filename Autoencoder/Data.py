@@ -15,7 +15,7 @@ def imwrite(matrix, path):
 class Data:
     def __init__(self):
         # how many samples per batch to load
-        self.batch_size = 64
+        self.batch_size = 75
         # Create training and test dataloaders
         # TODO: https://stackoverflow.com/questions/53998282/how-does-the-number-of-workers-parameter-in-pytorch-dataloader-actually-work
         self.num_workers = 0
@@ -37,13 +37,20 @@ class Data:
         self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size, num_workers=self.num_workers)
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size, num_workers=self.num_workers)
 
-    def read_from_folder(self, folder):
-        transform = transforms.Compose([transforms.ToTensor()])
+    def read_from_folder(self, noisy, perfect):
+        transform = transforms.Compose([
+            transforms.Grayscale(),
+            transforms.ToTensor()
+        ])
 
-        trainset = torchvision.datasets.ImageFolder(root=folder, transform=transform)
-        testset = torchvision.datasets.ImageFolder(root=folder, transform=transform)
+        train_noisy_set = torchvision.datasets.ImageFolder(root=noisy, transform=transform)
+        train_perfect_set = torchvision.datasets.ImageFolder(root=perfect, transform=transform)
 
-        self.trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size, num_workers=self.num_workers)
+        testset = torchvision.datasets.ImageFolder(root=noisy, transform=transform)
+
+        self.train_noisy_loader = torch.utils.data.DataLoader(train_noisy_set, batch_size=self.batch_size, num_workers=self.num_workers)
+        self.train_perfect_loader = torch.utils.data.DataLoader(train_perfect_set, batch_size=self.batch_size, num_workers=self.num_workers)
+
         self.testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def visualize(self):
