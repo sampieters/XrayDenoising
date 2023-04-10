@@ -4,6 +4,7 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as im
+from torch.utils.data import DataLoader
 
 def imread(path):
     image = im.open(path)
@@ -40,7 +41,9 @@ class Data:
     def read_from_folder(self, noisy, perfect):
         transform = transforms.Compose([
             transforms.Grayscale(),
-            transforms.ToTensor()
+            #transforms.PILToTensor(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.2887])
         ])
 
         train_noisy_set = torchvision.datasets.ImageFolder(root=noisy, transform=transform)

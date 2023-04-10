@@ -4,7 +4,7 @@ from PIL import Image as im
 from phantominator import shepp_logan, dynamic, mr_ellipsoid_parameters
 
 # Directory with raw dark fields, flat fields and projections in .tif format
-readDIR = './input/noisy/real_0/'
+readDIR = './input/testing/real_0/'
 # Directory for the output files
 outDIR = './output/'
 
@@ -25,8 +25,8 @@ nrProj =             50        	    # number of acquired projections
 firstProj =          321            # image number of first projection
 
 in_dir = "./input/pngs/"
-out_dir = "./input/perfect/perfect/"
-output_dir = "./input/noisy/"
+out_dir = "./input/perfect/"
+output_dir = "input/training/"
 amount = 0
 generated = 1
 variations = 20
@@ -73,7 +73,7 @@ def simulate_noisy(clean, out_path):
 
     print("Load all possible flat fields...")
     # This loop is merging the perfect projection with one prior white field
-    print("Generated noisy image (based on prior white fields)...")
+    print("Generated training image (based on prior white fields)...")
     for i in range(nrWhitePrior):
         f_j = imread(readDIR + prefixFlat + f'{firstWhitePrior + i:{numType}}' + fileFormat)
         p_j = n_j * (f_j - meanDarkfield) + meanDarkfield
@@ -81,7 +81,7 @@ def simulate_noisy(clean, out_path):
         imwrite(p_j, out_path + f"noisy_{i}.tif")
 
     # This loop is merging the perfect projection with one post white field
-    print("Generated noisy image (based on post white fields)...")
+    print("Generated training image (based on post white fields)...")
     for i in range(nrWhitePost):
         f_j = imread(readDIR + prefixFlat + f'{firstWhitePost + i:{numType}}' + fileFormat)
         p_j = n_j * (f_j - meanDarkfield) + meanDarkfield
@@ -100,13 +100,16 @@ ph = shepp_logan((generated, 256, 1248))
 for i in range(amount, generated):
     slice = ph[:][:][i]
     slice = np.round(((2 ** 16 - 1) * slice)).astype(np.uint16)
-    imwrite(slice, out_dir + f'perfect_{type.format(i)}.tif')
+    if not os.path.exists(out_dir + f'{i}'):
+        os.mkdir(out_dir + f'{i}')
+    for j in range(0, 600):
+        imwrite(slice, out_dir + f'{i}/' + f'perfect_{j}.tif')
 
-# Generate noisy images
+# Generate training images
 for i in range(0, amount + generated):
     if not os.path.exists(output_dir + f'{i}'):
         os.mkdir(output_dir + f'{i}')
-    simulate_noisy(out_dir + f'perfect_{type.format(i)}.tif', output_dir + f'{i}/')
+    simulate_noisy(out_dir + f'{i}/perfect_0.tif', output_dir + f'{i}/')
 
 
 
@@ -114,7 +117,7 @@ for i in range(0, amount + generated):
 
 def RMSE():
     clean = imread('input/perfect/perfect/perfect_0001.tif')
-    d = imread('./input/noisy/0/noisy_0.tif')
+    d = imread('input/training/0/noisy_0.tif')
 
     mse = 0
     for x in range(clean.shape[0]):

@@ -50,7 +50,7 @@ class ConvolutionalAutoEncoder(torch.nn.Module):
         return decoded
 
 data = Data.Data()
-data.read_from_folder('../input/noisy', '../input/perfect')
+data.read_from_folder('../input/training', '../input/perfect')
 
 model = ConvolutionalAutoEncoder()
 loss_function = torch.nn.MSELoss()
@@ -64,9 +64,9 @@ id_noisy = 0
 id_perfect = 0
 
 for epoch in range(epochs):
-    for (noisy_image, labels) in tqdm(data.train_noisy_loader):
-        perfect_image = data.train_perfect_loader.dataset[id_perfect][0]
-        perfect_image = perfect_image.repeat((75, 1, 1, 1))
+    dataloader_iterator = iter(data.train_perfect_loader)
+    for (noisy_image, label) in tqdm(data.train_noisy_loader):
+        perfect_image = next(dataloader_iterator)
 
         reconstructed = model(noisy_image)
 
@@ -103,7 +103,6 @@ with torch.no_grad():
 
         # iterate over the image tensors and print their shapes
         for i, image_tensor in enumerate(image_tensors):
-            print(f"Image {i}: shape = {image_tensor.shape}")
             array = image_tensor.numpy()
             array = array.squeeze()
             array = array.reshape((256, 1248))
@@ -111,7 +110,7 @@ with torch.no_grad():
             array[array < 0] = 0
             #tmp = -np.log(tmp)
             #tmp[np.isinf(tmp)] = 10 ** 5
-            array = np.round((2 ** 16 - 1) * array).astype(np.uint16)
+            #array = np.round((2 ** 16 - 1) * array).astype(np.uint16)
 
             im.fromarray(array).save(f"../output/autoencoder/denoised_{type.format(j)}.tif")
             j += 1
