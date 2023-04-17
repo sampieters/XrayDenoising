@@ -39,7 +39,8 @@ def imread(path):
 
 
 def imwrite(matrix, path):
-    im.fromarray(matrix).save(path)
+    l = im.fromarray(matrix)
+    l.save(path)
 
 
 def png_to_tif(input_path, output_path):
