@@ -35,12 +35,28 @@ class ConvolutionalAutoEncoder(torch.nn.Module):
         padding = (1, 1)
 
         self.encoder = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=input_size[2], out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.ReLU()
+            torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.ReLU(),
+            #torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=kernel_size, stride=stride, padding=padding),
+            #nn.ReLU(),
+            #torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=kernel_size, stride=stride, padding=padding),
+            #nn.ReLU(),
+            #torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=kernel_size, stride=stride, padding=padding),
+            #nn.ReLU(),
+            #torch.nn.Conv2d(in_channels=128, out_channels=256, kernel_size=kernel_size, stride=stride, padding=padding),
+            #nn.ReLU()
         )
 
         self.decoder = torch.nn.Sequential(
-            torch.nn.ConvTranspose2d(in_channels=out_channels, out_channels=input_size[2], kernel_size=kernel_size, stride=stride, padding=padding),
+            #torch.nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=kernel_size, stride=stride, padding=padding),
+            #nn.ReLU(),
+            #torch.nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=kernel_size, stride=stride, padding=padding),
+            #nn.ReLU(),
+            #torch.nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=kernel_size, stride=stride, padding=padding),
+            #nn.ReLU(),
+            #torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding),
+            #nn.ReLU(),
+            torch.nn.ConvTranspose2d(in_channels=16, out_channels=1, kernel_size=kernel_size, stride=stride, padding=padding),
             nn.Sigmoid()
         )
 
@@ -53,7 +69,7 @@ data = Data.Data()
 data.read_from_folder('../input/perfect', '../input/perfect')
 
 model = ConvolutionalAutoEncoder()
-loss_function = torch.nn.MSELoss()
+loss_function = torch.nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-1, weight_decay=1e8)
 
 epochs = 3

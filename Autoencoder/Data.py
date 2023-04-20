@@ -28,7 +28,6 @@ class Data:
         transform = transforms.Compose([
             transforms.Lambda(lambda img: np.asarray(img) / (2 ** 16 - 1)),
             transforms.Lambda(lambda img: torch.from_numpy(img)),
-            #transforms.ToTensor(),
         ])
 
 
