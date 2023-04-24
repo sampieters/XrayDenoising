@@ -2,6 +2,8 @@ import numpy
 import numpy as np
 import torch
 import torch.nn as nn
+from matplotlib import pyplot as plt
+
 import Data
 from tqdm import tqdm
 from PIL import Image as im
@@ -32,7 +34,7 @@ class ConvolutionalAutoEncoder(torch.nn.Module):
         stride = (1, 1)
 
         # Define the padding
-        padding = (1, 1)
+        padding = (0, 0)
 
         self.encoder = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding),
@@ -70,11 +72,12 @@ data.read_from_folder('../input/perfect', '../input/perfect')
 
 model = ConvolutionalAutoEncoder()
 loss_function = torch.nn.BCELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-1, weight_decay=1e8)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.001)
 
-epochs = 3
+epochs = 2
 outputs = []
 losses = []
+avg_losses = []
 
 id_noisy = 0
 id_perfect = 0
@@ -102,10 +105,12 @@ for epoch in range(epochs):
         losses.append(loss.item())
         outputs.append((epochs, noisy_image, reconstructed))
     print(f"Epoch [{epoch + 1}/{epochs}], Loss: {numpy.average(losses).item():.4f}")
-#plt.style.use('fivethirtyeight')
-#plt.xlabel('Iterations')
-#plt.ylabel('Loss')
-#plt.plot(losses[-100:])
+    avg_losses.append(numpy.average(losses).item())
+
+plt.style.use('fivethirtyeight')
+plt.xlabel('Iterations')
+plt.ylabel('Loss')
+plt.plot(range(epochs), avg_losses)
 
 print('Finished training \n'
       'Started testing')
@@ -123,6 +128,8 @@ with torch.no_grad():
         images = images.to(torch.float32)
         images = images.unsqueeze(1)
 
+        if j == 80:
+            print("")
 
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)

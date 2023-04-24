@@ -28,8 +28,8 @@ in_dir = "./input/pngs/"
 out_dir = "./input/perfect/"
 output_dir = "input/training/"
 amount = 0
-generated = 1
-variations = 20
+generated = 10
+variations = 10
 type = '{0:04d}'
 
 
@@ -96,7 +96,6 @@ for i in range(0, amount):
     img = imread(readDIR + prefixFlat + f'{type.format(i)}' + fileFormat)
 
 # Also generate some images if not enough
-generated = 10
 ph = shepp_logan((generated, 256, 1248))
 for i in range(amount, generated):
     slice = ph[:][:][i]

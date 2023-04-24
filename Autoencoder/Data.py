@@ -34,7 +34,7 @@ class Data:
         train_noisy_set = CustomImageFolder(root_dir=noisy, transform=transform)
         train_perfect_set = CustomImageFolder(root_dir=perfect, transform=transform)
 
-        testset = CustomImageFolder(root_dir=noisy, transform=transform)
+        testset = CustomImageFolder(root_dir="../input/testing", transform=transform)
 
         #image, label = train_perfect_set[600]
         #m = torch.max(image)
