@@ -9,9 +9,9 @@ from PIL import Image as im
 #################################################
 
 # Directory with raw dark fields, flat fields and projections in .tif format
-readDIR = '../../input/'
+readDIR = '../../input/duplicate_testing/real_0/'
 # Directory for the output files
-outDIR = '../../output/'
+outDIR = '../../output/DFFC/'
 
 # file names
 prefixProj =         'dbeer_5_5_'   # prefix of the original projections

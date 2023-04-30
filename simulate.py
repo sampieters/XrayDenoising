@@ -4,7 +4,7 @@ from PIL import Image as im
 from phantominator import shepp_logan, dynamic, mr_ellipsoid_parameters
 
 # Directory with raw dark fields, flat fields and projections in .tif format
-readDIR = './input/testing/real_0/'
+readDIR = './input/duplicate_testing/real_0/'
 # Directory for the output files
 outDIR = './output/'
 
@@ -27,7 +27,7 @@ firstProj =          321            # image number of first projection
 in_dir = "./input/pngs/"
 out_dir = "./input/perfect/"
 output_dir = "input/training/"
-amount = 0
+amount = 5
 generated = 10
 variations = 10
 type = '{0:04d}'
@@ -50,7 +50,7 @@ def png_to_tif(input_path, output_path):
     # Convert to uint16 and scale values between 0 and 65535
     image = image.astype('uint16')
     image = ((image / image.max()) * (2 ** 16 - 1)).astype('uint16')
-    if image.shape[1] == 3:
+    if image.shape[2] == 3:
         image = image[:, :, 0]
     # Save as tiff file
     imwrite(image, output_path)
@@ -92,13 +92,17 @@ def simulate_noisy(clean, out_path):
 
 # Loop over all pngs and convert them to tiff files
 for i in range(0, amount):
-    png_to_tif(in_dir + f'perfect_{type.format(i)}.png', out_dir + f'perfect_{type.format(i)}.tif')
-    img = imread(readDIR + prefixFlat + f'{type.format(i)}' + fileFormat)
+    if not os.path.exists(out_dir + f'{i}'):
+        os.mkdir(out_dir + f'{i}')
+    for j in range(0, 600):
+        png_to_tif(in_dir + f'perfect_{type.format(i)}.png', out_dir + f'{i}/perfect_{j}.tif')
+
 
 # Also generate some images if not enough
-ph = shepp_logan((generated, 256, 1248))
-for i in range(amount, generated):
-    slice = ph[:][:][i]
+ph = shepp_logan((generated + 2, 256, 1248))
+ph = ph[1:-1, :, :]
+for i in range(amount, amount + generated):
+    slice = ph[:][:][i - amount]
     slice = np.round(((2 ** 16 - 1) * slice)).astype(np.uint16)
     if not os.path.exists(out_dir + f'{i}'):
         os.mkdir(out_dir + f'{i}')

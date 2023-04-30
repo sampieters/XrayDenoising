@@ -1,12 +1,12 @@
-import numpy
-import numpy as np
-import torch
-import torch.nn as nn
+import torchvision.transforms as transforms
 from matplotlib import pyplot as plt
-
-import Data
-from tqdm import tqdm
 from PIL import Image as im
+from tqdm import tqdm
+import torch.nn as nn
+import numpy as np
+import numpy
+import torch
+import Data
 
 #  configuring device
 if torch.cuda.is_available():
@@ -34,7 +34,7 @@ class ConvolutionalAutoEncoder(torch.nn.Module):
         stride = (1, 1)
 
         # Define the padding
-        padding = (0, 0)
+        padding = (1, 1)
 
         self.encoder = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding),
@@ -68,35 +68,27 @@ class ConvolutionalAutoEncoder(torch.nn.Module):
         return decoded
 
 data = Data.Data()
-data.read_from_folder('../input/perfect', '../input/perfect')
+train_noisy_set = data.read_from_folder('../input/training')
+train_perfect_set = data.read_from_folder('../input/perfect')
+test_set = data.read_from_folder('../input/denoise_testing')
+train_noisy_loader, train_perfect_loader, val_noisy_loader, val_perfect_loader = data.random_split(train_noisy_set, train_perfect_set)
+test_loader, _, _, _ = data.random_split(test_set, test_set, 1)
 
 model = ConvolutionalAutoEncoder()
 loss_function = torch.nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.001)
 
-epochs = 2
+epochs = 3
 outputs = []
 losses = []
 avg_losses = []
-
-id_noisy = 0
-id_perfect = 0
-
 for epoch in range(epochs):
-    dataloader_iterator = iter(data.train_perfect_loader)
-    for (noisy_image, label) in tqdm(data.train_noisy_loader):
+    dataloader_iterator = iter(train_perfect_loader)
+    for (noisy_image, label) in tqdm(train_noisy_loader):
         perfect_image = next(dataloader_iterator)
-
-
-        array = np.array(noisy_image.squeeze())
-
-
-        noisy_image = noisy_image.to(torch.float32)
-        noisy_image = noisy_image.unsqueeze(1)
-
         reconstructed = model(noisy_image)
 
-        loss = loss_function(reconstructed, noisy_image)
+        loss = loss_function(reconstructed, perfect_image[0])
 
         optimizer.zero_grad()
         loss.backward()
@@ -107,34 +99,42 @@ for epoch in range(epochs):
     print(f"Epoch [{epoch + 1}/{epochs}], Loss: {numpy.average(losses).item():.4f}")
     avg_losses.append(numpy.average(losses).item())
 
-plt.style.use('fivethirtyeight')
-plt.xlabel('Iterations')
-plt.ylabel('Loss')
-plt.plot(range(epochs), avg_losses)
+    if epoch == 1:
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            }, '../output/info/checkpoint.pth')
 
-print('Finished training \n'
-      'Started testing')
+
+#model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
+#with torch.no_grad():
+#    dataloader_iterator = iter(val_perfect_loader)
+#    for (noisy_image, label) in tqdm(val_noisy_loader):
+#        perfect_image = next(dataloader_iterator)
+#        reconstructed = model(noisy_image)
+
+#        loss = loss_function(reconstructed, perfect_image[0])
+
+#        optimizer.zero_grad()
+#        loss.backward()
+#        optimizer.step()
+
+#        losses.append(loss.item())
+#        outputs.append((epochs, noisy_image, reconstructed))
+
+print('Finished training \nStarted testing')
 
 # Test the model
-correct = 0
-total = 0
 type = '{0:04d}'
 
 j = 0
 with torch.no_grad():
-    for data in tqdm(data.testloader):
+    for data in tqdm(test_loader):
         images, labels = data
-
-        images = images.to(torch.float32)
-        images = images.unsqueeze(1)
-
-        if j == 80:
-            print("")
 
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)
-        #total += labels.size(0)
-        #correct += (predicted == labels).sum().item()
         image_tensors = torch.split(outputs, 1, dim=0)
 
         # iterate over the image tensors and print their shapes
@@ -142,13 +142,13 @@ with torch.no_grad():
             array = image_tensor.numpy()
             array = array.squeeze()
             array = array.reshape((256, 1248))
-
             array[array < 0] = 0
-            #tmp = -np.log(tmp)
-            #tmp[np.isinf(tmp)] = 10 ** 5
             array = np.round((2 ** 16 - 1) * array).astype(np.uint16)
-
             im.fromarray(array).save(f"../output/autoencoder/denoised_{type.format(j)}.tif")
             j += 1
 
-#print('Accuracy of the network on the 10000 test images: %d %%' % (100 * correct / total))
+plt.xlabel('Iterations')
+plt.ylabel('Loss')
+plt.plot(range(epochs), avg_losses)
+plt.savefig('../output/info/Loss.png')
+plt.close()
