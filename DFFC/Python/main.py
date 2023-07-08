@@ -11,11 +11,11 @@ from PIL import Image as im
 # Directory with raw dark fields, flat fields and projections in .tif format
 readDIR = '../../input/duplicate_testing/real_0/'
 # Directory for the output files
-outDIR = '../../output/DFFC/'
+outDIR = '../../output/0/'
 
 # file names
 prefixProj =         'dbeer_5_5_'   # prefix of the original projections
-outPrefixDFFC =      'DFFC'         # prefix of the dynamic flat field corrected projections
+outPrefixDFFC =      '0'         # prefix of the dynamic flat field corrected projections
 prefixFlat =         'dbeer_5_5_'   # prefix of the flat fields
 prefixDark =         'dbeer_5_5_'   # prefix of the dark fields
 numType =            '04d'         # number type used in image names

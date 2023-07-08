@@ -28,7 +28,7 @@ in_dir = "./input/pngs/"
 out_dir = "./input/perfect/"
 output_dir = "input/training/"
 amount = 5
-generated = 10
+generated = 5
 variations = 10
 type = '{0:04d}'
 
@@ -85,8 +85,11 @@ def simulate_noisy(clean, out_path):
     print("Generated training image (based on post white fields)...")
     for i in range(nrWhitePost):
         f_j = imread(readDIR + prefixFlat + f'{firstWhitePost + i:{numType}}' + fileFormat)
-        p_j = n_j * (f_j - meanDarkfield) + meanDarkfield
-        p_j = np.round(p_j).astype(np.uint16)
+        f_j = f_j / (2 ** 16 - 1)
+        meanDarkfield = meanDarkfield / (2 ** 16 - 1)
+        # n_j is values between 0 and 1
+        p_j = n_j * f_j
+        p_j = np.round(p_j * (2 ** 16 - 1)).astype(np.uint16)
         imwrite(p_j, out_path + f"noisy_{nrWhitePrior + i}.tif")
 
 
@@ -115,18 +118,3 @@ for i in range(0, amount + generated):
         os.mkdir(output_dir + f'{i}')
     simulate_noisy(out_dir + f'{i}/perfect_0.tif', output_dir + f'{i}/')
 
-
-
-
-
-def RMSE():
-    clean = imread('input/perfect/perfect/perfect_0001.tif')
-    d = imread('input/training/0/noisy_0.tif')
-
-    mse = 0
-    for x in range(clean.shape[0]):
-        for y in range(clean.shape[1]):
-            n = clean.shape[0] * clean.shape[1]
-            mse += ((d[x][y] - clean[x][y]) ** 2) / n
-    rmse = np.sqrt(mse)
-    return rmse

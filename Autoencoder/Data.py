@@ -15,7 +15,7 @@ def imwrite(matrix, path):
 class Data:
     def __init__(self):
         # how many samples per batch to load
-        self.batch_size = 75
+        self.batch_size = 32
         # Create training and test dataloaders
         # TODO: https://stackoverflow.com/questions/53998282/how-does-the-number-of-workers-parameter-in-pytorch-dataloader-actually-work
         self.num_workers = 0
