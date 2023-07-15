@@ -15,19 +15,19 @@ def imwrite(matrix, path):
 class Data:
     def __init__(self):
         # how many samples per batch to load
-        self.batch_size = 32
+        self.batch_size = 8
         # Create training and test dataloaders
         # TODO: https://stackoverflow.com/questions/53998282/how-does-the-number-of-workers-parameter-in-pytorch-dataloader-actually-work
         self.num_workers = 0
 
-    def read_from_folder(self, root):
+    def read_from_folder(self, noisy_root, perf_root):
         transform = transforms.Compose([
             transforms.Lambda(lambda img: np.asarray(img) / (2 ** 16 - 1)),
             transforms.Lambda(lambda img: torch.from_numpy(img)),
             transforms.Lambda(lambda img: img.to(torch.float32)),
             transforms.Lambda(lambda img: img.unsqueeze(0))
         ])
-        dataset = CustomImageFolder(root_dir=root, transform=transform)
+        dataset = CustomImageFolder(noisy_root=noisy_root, perf_root=perf_root, transform=transform)
         return dataset
 
     def random_split(self, noisy_dataset, perf_dataset, lengths=0.75):
