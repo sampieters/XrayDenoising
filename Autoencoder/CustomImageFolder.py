@@ -46,3 +46,11 @@ class CustomImageFolder(Dataset):
             if self.transform is not None:
                 perf_img = self.transform(perf_img)
         return noisy_img, perf_img
+
+    def showitem(self, index):
+        noisy_img, _ = self.noisy[index]
+        perf_img, _ = self.perfect[index]
+        img = Image.open(noisy_img)
+        img2 = Image.open(perf_img)
+        img.show()
+        img2.show()

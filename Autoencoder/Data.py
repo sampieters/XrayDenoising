@@ -1,24 +1,13 @@
+from torch.utils.data import DataLoader, random_split
 from CustomImageFolder import CustomImageFolder
 import torchvision.transforms as transforms
-from torch.utils.data import DataLoader, SubsetRandomSampler
-from PIL import Image as im
 import numpy as np
 import torch
 
-def imread(path):
-    image = im.open(path)
-    return np.asarray(image)
-
-def imwrite(matrix, path):
-    im.fromarray(matrix).save(path)
 
 class Data:
-    def __init__(self):
-        # how many samples per batch to load
-        self.batch_size = 8
-        # Create training and test dataloaders
-        # TODO: https://stackoverflow.com/questions/53998282/how-does-the-number-of-workers-parameter-in-pytorch-dataloader-actually-work
-        self.num_workers = 0
+    def __init__(self, batch_size):
+        self.batch_size = batch_size
 
     def read_from_folder(self, noisy_root, perf_root):
         transform = transforms.Compose([
@@ -30,21 +19,13 @@ class Data:
         dataset = CustomImageFolder(noisy_root=noisy_root, perf_root=perf_root, transform=transform)
         return dataset
 
-    def random_split(self, noisy_dataset, perf_dataset, lengths=0.75):
-        # Define training and validation set sizes
-        train_size = int(lengths * len(noisy_dataset))
+    def rand_split(self, dataset, training_perc, validation_perc, test_perc=0.0):
+        train_size = int(training_perc * len(dataset))
+        val_size = int(validation_perc * len(dataset))
+        test_size = int(test_perc * len(dataset))
+        train_set, valid_set, test_set = random_split(dataset, [train_size, val_size, test_size])
 
-        # Define random samplers for each subset
-        train_sampler = SubsetRandomSampler(range(train_size))
-        val_sampler = SubsetRandomSampler(range(train_size, len(noisy_dataset)))
-
-        train_sampler = None
-        val_sampler = None
-
-        # Define data loaders for each subset
-        noisy_train_loader = DataLoader(noisy_dataset, batch_size=self.batch_size, sampler=train_sampler)
-        perf_train_loader = DataLoader(perf_dataset, batch_size=self.batch_size, sampler=train_sampler)
-
-        noisy_val_loader = DataLoader(noisy_dataset, batch_size=self.batch_size, sampler=val_sampler)
-        perf_val_loader = DataLoader(perf_dataset, batch_size=self.batch_size, sampler=val_sampler)
-        return noisy_train_loader, perf_train_loader, noisy_val_loader, perf_val_loader
+        train_loader = DataLoader(train_set, batch_size=self.batch_size)
+        val_loader = DataLoader(valid_set, batch_size=self.batch_size)
+        test_loader = DataLoader(test_set, batch_size=self.batch_size)
+        return train_loader, val_loader, test_loader

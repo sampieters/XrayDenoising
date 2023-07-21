@@ -128,6 +128,7 @@ if __name__ == '__main__':
 
         tmp[tmp < 0] = 0
         tmp = -np.log(tmp)
+        tmp[tmp < 0] = 0
         tmp[np.isinf(tmp)] = 10 ** 5
 
         tmp = (tmp - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])

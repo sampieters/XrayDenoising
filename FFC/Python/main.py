@@ -9,7 +9,7 @@ from PIL import Image as im
 # Directory with raw dark fields, flat fields and projections in .tif format
 readDIR = '../../input/duplicate_testing/real_0/'
 # Directory for the output files
-outDIR = '../../output/FFC/'
+outDIR = '../../output/FFC/Python/'
 
 # file names
 prefixProj =         'dbeer_5_5_'   # prefix of the original projections
@@ -87,13 +87,14 @@ if __name__ == '__main__':
         # Load projection
         projection = imread(readDIR + prefixProj + f'{nrImage[i-1]:{numType}}' + fileFormat)
         # used to be np.divide instead of '/', check if this does the same
-        # why not eig0 - meanDarkfield?
         tmp = (np.squeeze(projection) - meanDarkfield) / eig0
 
         tmp[tmp < 0] = 0
         tmp = -np.log(tmp)
+        # TODO: maybe there is a one line fix but not sure yet
+        tmp[tmp < 0] = 0
         tmp[np.isinf(tmp)] = 10 ** 5
 
         tmp = (tmp - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
-        tmp = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)
+        tmp = np.uint16(np.round((2 ** 16 - 1) * tmp))
         imwrite(tmp, outDIR + outPrefixFFC + f'{nrImage[i - 1]:{numType}}' + fileFormat)

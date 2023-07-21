@@ -25,9 +25,9 @@
 
 %directories
 % Directory with raw dark fields, flat fields and projections in .tif format
-readDIR=    './input/';
+readDIR=    '../../input/duplicate_testing/real_0/';
 % Directory where the DYNAMIC flat field corrected projections are saved
-outDIRDFFC= './output/';
+outDIRDFFC= '../../output/DFFC';
 
 addpath('/Users/sampieters/Desktop/informatica/master/Research Project/CodeDynamicFlatFieldCorrection/BM3D')              % directory with files of BM3D filter
 
@@ -59,7 +59,7 @@ nrPArepetions=      10;             % number of parallel analysis repetions
 %% load dark and white fields
 
 mkdir(outDIRDFFC)
-mkdir(outDIRFFC)
+%mkdir(outDIRFFC)
 
 nrImage=firstProj:firstProj-1+nrProj;
 display('load dark and flat fields:')
@@ -83,10 +83,6 @@ for ii=firstWhitePrior:firstWhitePrior-1+nrWhitePrior
     k=k+1;
     tmp2=double(imread([readDIR prefixFlat num2str(ii,numType) fileFormat]));
     tmp=tmp2-meanDarkfield;
-    % TOT HIER AL HETZELFDE VAN WAARDEN
-    whut1 = tmp(:);
-    whut2 = meanDarkfield(:);
-    whut3 = whut1 - whut2;
     whiteVec(:,k)=tmp(:)-meanDarkfield(:);
 end
 for ii=firstWhitePost:firstWhitePost-1+nrWhitePost
@@ -112,7 +108,16 @@ display([int2str(nrEigenflatfields) ' eigen flat fields selected.'])
 eig0 = reshape(mn,dims);
 EigenFlatfields(:,:,1) = eig0;
 for ii=1:nrEigenflatfields
-    EigenFlatfields(:,:,ii+1) = reshape(Data*V1(:,N-ii+1),dims);
+    tmp = reshape(Data*V1(:,N-ii+1),dims);
+    EigenFlatfields(:,:,ii+1) = tmp;
+    %% (Sam): display eigen flatfield
+    tmp=tmp/mean(tmp(:))*mean(tmp(:));
+    tmp(tmp<0)=0;
+    tmp=-log(tmp);
+    tmp(isinf(tmp))=10^5;
+    tmp=(tmp-scaleOutputImages(1))/(scaleOutputImages(2)-scaleOutputImages(1));
+    tmp=uint16((2^16-1)*tmp);
+    imwrite(tmp,[outDIRDFFC '/eigenflatfields/eigenflatfield_' num2str(ii,numType) fileFormat]);
 end
 
 clear Data

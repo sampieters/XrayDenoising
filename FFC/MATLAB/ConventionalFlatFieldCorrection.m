@@ -25,9 +25,9 @@
 
 %directories
 % Directory with raw dark fields, flat fields and projections in .tif format
-readDIR=    './input/';          
+readDIR=    '../../input/duplicate_testing/real_0/';          
 % Directory where the CONVENTIONAL flat field corrected projections are saved
-outDIRFFC=  './ouput/';
+outDIRFFC=  '../../output/FFC/MATLAB/';
 
 %file names
 prefixProj=         'dbeer_5_5_';   % prefix of the original projections

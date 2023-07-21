@@ -27,9 +27,9 @@ firstProj =          321            # image number of first projection
 in_dir = "./input/pngs/"
 out_dir = "./input/perfect/"
 output_dir = "input/training/"
-amount = 5
-generated = 5
-variations = 10
+amount = 0
+generated = 1
+variations = 6
 type = '{0:04d}'
 
 
