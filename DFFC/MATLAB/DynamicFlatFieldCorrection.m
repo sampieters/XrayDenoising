@@ -27,7 +27,7 @@
 % Directory with raw dark fields, flat fields and projections in .tif format
 readDIR=    '../../input/duplicate_testing/real_0/';
 % Directory where the DYNAMIC flat field corrected projections are saved
-outDIRDFFC= '../../output/DFFC';
+outDIRDFFC= '../../output/DFFC/MATLAB';
 
 addpath('/Users/sampieters/Desktop/informatica/master/Research Project/CodeDynamicFlatFieldCorrection/BM3D')              % directory with files of BM3D filter
 
@@ -108,16 +108,11 @@ display([int2str(nrEigenflatfields) ' eigen flat fields selected.'])
 eig0 = reshape(mn,dims);
 EigenFlatfields(:,:,1) = eig0;
 for ii=1:nrEigenflatfields
+    t = V1(:,N-ii+1);
+    k = Data*V1(:,N-ii+1);
+
     tmp = reshape(Data*V1(:,N-ii+1),dims);
     EigenFlatfields(:,:,ii+1) = tmp;
-    %% (Sam): display eigen flatfield
-    tmp=tmp/mean(tmp(:))*mean(tmp(:));
-    tmp(tmp<0)=0;
-    tmp=-log(tmp);
-    tmp(isinf(tmp))=10^5;
-    tmp=(tmp-scaleOutputImages(1))/(scaleOutputImages(2)-scaleOutputImages(1));
-    tmp=uint16((2^16-1)*tmp);
-    imwrite(tmp,[outDIRDFFC '/eigenflatfields/eigenflatfield_' num2str(ii,numType) fileFormat]);
 end
 
 clear Data
@@ -128,7 +123,9 @@ filteredEigenFlatfields=zeros(dims(1),dims(2),1+nrEigenflatfields);
 
 for ii=2:1+nrEigenflatfields
     display(['filter eigen flat field ' int2str(ii-1)])
+    % tmp is the Eigenflatfields normalized between 0 and 1
     tmp=(EigenFlatfields(:,:,ii)-min(min(EigenFlatfields(:,:,ii))))/(max(max(EigenFlatfields(:,:,ii)))-min(min(EigenFlatfields(:,:,ii))));
+    imwrite(tmp,[outDIRDFFC '/eigenflatfields/eigenflatfield_' num2str(ii-1,numType) fileFormat]);
     [~,tmp2]=BM3D(1,tmp);
     filteredEigenFlatfields(:,:,ii)=(tmp2*(max(max(EigenFlatfields(:,:,ii)))-min(min(EigenFlatfields(:,:,ii)))))+min(min(EigenFlatfields(:,:,ii)));
 end

@@ -1,15 +1,20 @@
 from torch.utils.data import DataLoader, random_split
 from CustomImageFolder import CustomImageFolder
 import torchvision.transforms as transforms
+from PIL import Image as im
 import numpy as np
 import torch
 
+
+def imwrite(matrix, path):
+    image = im.fromarray(matrix)
+    image.save(path)
 
 class Data:
     def __init__(self, batch_size):
         self.batch_size = batch_size
 
-    def read_from_folder(self, noisy_root, perf_root):
+    def read_from_folder(self, noisy_root, perf_root=None):
         transform = transforms.Compose([
             transforms.Lambda(lambda img: np.asarray(img) / (2 ** 16 - 1)),
             transforms.Lambda(lambda img: torch.from_numpy(img)),

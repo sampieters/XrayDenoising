@@ -3,6 +3,8 @@ import condTVmean
 import numpy as np
 import parallelAnalysis
 from PIL import Image as im
+import scipy.io
+from sklearn.metrics import mean_squared_error
 
 #################################################
 # PARAMETERS
@@ -11,7 +13,7 @@ from PIL import Image as im
 # Directory with raw dark fields, flat fields and projections in .tif format
 readDIR = '../../input/duplicate_testing/real_0/'
 # Directory for the output files
-outDIR = '../../output/0/'
+outDIR = '../../output/DFFC/Python/'
 
 # file names
 prefixProj =         'dbeer_5_5_'   # prefix of the original projections
@@ -44,8 +46,10 @@ def imread(path):
     image = im.open(path)
     return np.asarray(image)
 
+
 def imwrite(matrix, path):
     im.fromarray(matrix).save(path)
+
 
 if __name__ == '__main__':
     # Get a list of all projection indices and get the dimensions of a .tif image (because they are all the same,
@@ -94,19 +98,42 @@ if __name__ == '__main__':
     EigenFlatfields = np.zeros((nrEigenflatfields+1, eig0.shape[0], eig0.shape[1]))
     EigenFlatfields[:][:][0] = eig0
     for i in range(0, nrEigenflatfields):
-        EigenFlatfields[:][:][i+1] = np.reshape(Data @ V1[:, N-i-1], dims, order='F')
+        # TODO: qucik fix but somehwere this gets turned around the negative
+        t = V1[:, N-i-1]
+        k = np.dot(Data, V1[:, N-i-1])
+        EigenFlatfields[:][:][i+1] = np.reshape(np.dot(Data, V1[:, N-i-1]), dims, order='F')
     del Data
 
     print("Filter eigen flat fields...")
     filteredEigenFlatfields = np.zeros((nrEigenflatfields+1, dims[0], dims[1]))
 
+    data = scipy.io.loadmat('bm3d.mat')
+    benchmark = [data['j'], data['k'], data['l'], data['m']]
     for i in range(1, nrEigenflatfields+1):
         print(f'Filter eigen flat field {str(i)}')
         min = np.min(EigenFlatfields[:][:][i])
         max = np.max(EigenFlatfields[:][:][i])
         tmp = (EigenFlatfields[:][:][i] - min) / (max - min)
+        tosave = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)
+        imwrite(tosave, outDIR + 'eigenflatfields/eigenflatfield_' + f'{i:{numType}}' + fileFormat)
+
+
+        #check = np.inf
+        #for fl in range(1, 256):
         tmp2 = bm3d.bm3d(tmp, 25/255)
         filteredEigenFlatfields[:][:][i] = (tmp2 * (max - min)) + min
+
+        #    ttt = benchmark[i]
+        #    kkk = filteredEigenFlatfields[:][:][i]
+
+        #    mse = mean_squared_error(benchmark[i], filteredEigenFlatfields[:][:][i])
+
+        #    if mse < check:
+        #        check = mse
+        #        print(f"Value {fl} has an mse of {mse}")
+        #print("")
+
+
 
     meanVector = np.zeros(len(nrImage))
     xArray = np.zeros((len(nrImage), nrEigenflatfields))

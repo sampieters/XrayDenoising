@@ -1,4 +1,6 @@
 import os
+
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -13,8 +15,11 @@ class CustomImageFolder(Dataset):
         self.noisy = []
 
         self.perfect_root_dir = perf_root
-        self.perfect_classes = sorted(os.listdir(self.perfect_root_dir))
-        self.perfect_class_to_idx = {self.perfect_classes[i]: i for i in range(len(self.perfect_classes))}
+        self.perfect_classes = []
+        self.perfect_class_to_idx = {}
+        if perf_root is not None:
+            self.perfect_classes = sorted(os.listdir(self.perfect_root_dir))
+            self.perfect_class_to_idx = {self.perfect_classes[i]: i for i in range(len(self.perfect_classes))}
         self.perfect = []
 
         for target in sorted(self.noisy_class_to_idx.keys()):
@@ -40,11 +45,14 @@ class CustomImageFolder(Dataset):
             noisy_img = Image.open(f)
             if self.transform is not None:
                 noisy_img = self.transform(noisy_img)
-        path, label = self.perfect[index]
-        with open(path, 'rb') as f:
-            perf_img = Image.open(f)
-            if self.transform is not None:
-                perf_img = self.transform(perf_img)
+
+        perf_img = torch.empty(0, 0)
+        if self.perfect_root_dir is not None:
+            path, label = self.perfect[index]
+            with open(path, 'rb') as f:
+                perf_img = Image.open(f)
+                if self.transform is not None:
+                    perf_img = self.transform(perf_img)
         return noisy_img, perf_img
 
     def showitem(self, index):
