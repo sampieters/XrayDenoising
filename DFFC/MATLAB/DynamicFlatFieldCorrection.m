@@ -112,7 +112,7 @@ for ii=1:nrEigenflatfields
     k = Data*V1(:,N-ii+1);
 
     tmp = reshape(Data*V1(:,N-ii+1),dims);
-    EigenFlatfields(:,:,ii+1) = tmp;
+    EigenFlatfields(:,:,ii+1) = reshape(Data*V1(:,N-ii+1),dims);
 end
 
 clear Data

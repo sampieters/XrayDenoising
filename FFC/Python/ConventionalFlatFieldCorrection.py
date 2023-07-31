@@ -1,23 +1,19 @@
-import bm3d
-import condTVmean
+import os
 import numpy as np
-import parallelAnalysis
 from PIL import Image as im
-import scipy.io
-from sklearn.metrics import mean_squared_error
 
 #################################################
 # PARAMETERS
 #################################################
 
 # Directory with raw dark fields, flat fields and projections in .tif format
-readDIR = '../../input/duplicate_testing/real_0/'
+readDIR = '../../input/real/'
 # Directory for the output files
-outDIR = '../../output/DFFC/Python/'
+outDIR = '../../output/FFC/Python/'
 
 # file names
 prefixProj =         'dbeer_5_5_'   # prefix of the original projections
-outPrefixDFFC =      '0'         # prefix of the dynamic flat field corrected projections
+outPrefixFFC =       'FFC'          # prefix of the CONVENTIONAL flat field corrected projections
 prefixFlat =         'dbeer_5_5_'   # prefix of the flat fields
 prefixDark =         'dbeer_5_5_'   # prefix of the dark fields
 numType =            '04d'         # number type used in image names
@@ -35,10 +31,6 @@ firstProj =          321            # image number of first projection
 # options output images
 scaleOutputImages =  [0, 2]         # output images are scaled between these values
 
-# algorithm parameters
-downsample =         2              # amount of downsampling during dynamic flat field estimation (integer between 1 and 20)
-nrPArepetions =      10             # number of parallel analysis repetitions
-
 #################################################
 # CODE
 #################################################
@@ -46,12 +38,14 @@ def imread(path):
     image = im.open(path)
     return np.asarray(image)
 
-
 def imwrite(matrix, path):
     im.fromarray(matrix).save(path)
 
+def ConventionalFlatFieldCorrection():
+    # Make the output directories
+    if not os.path.exists(outDIR):
+        os.mkdir(outDIR)
 
-if __name__ == '__main__':
     # Get a list of all projection indices and get the dimensions of a .tif image (because they are all the same,
     # get the dimensions of the first image)
     nrImage = np.arange(firstProj, firstProj+nrProj)
@@ -64,7 +58,6 @@ if __name__ == '__main__':
     dark = np.zeros((nrDark, dims[0], dims[1]))
     for i in range(firstDark - 1, firstDark + nrDark - 1):
         dark[:][:][i] = imread(readDIR + prefixProj + f'{i+1:{numType}}' + fileFormat)
-
     # Get the mean (sum of all elements divided by the dimensions)
     meanDarkfield = np.mean(dark, 0)
 
@@ -85,79 +78,23 @@ if __name__ == '__main__':
 
     # subtract mean flat field
     N, M = flat.shape
-    Data = flat - np.tile(mn, (N, 1))
-    Data = Data.transpose()
-    del dark, flat
-
-    print("Parallel Analysis:")
-    V1, D1, nrEigenflatfields = parallelAnalysis.parallelAnalysis(Data, nrPArepetions)
-
-    print(f"{str(nrEigenflatfields)} eigen flat fields selected.")
-
+    Data = (flat - np.tile(mn, (N, 1))).transpose()
     eig0 = np.reshape(mn, dims, order='F')
-    EigenFlatfields = np.zeros((nrEigenflatfields+1, eig0.shape[0], eig0.shape[1]))
-    EigenFlatfields[:][:][0] = eig0
-    for i in range(0, nrEigenflatfields):
-        # TODO: qucik fix but somehwere this gets turned around the negative
-        t = V1[:, N-i-1]
-        k = np.dot(Data, V1[:, N-i-1])
-        EigenFlatfields[:][:][i+1] = np.reshape(np.dot(Data, V1[:, N-i-1]), dims, order='F')
-    del Data
+    del dark, flat, Data
 
-    print("Filter eigen flat fields...")
-    filteredEigenFlatfields = np.zeros((nrEigenflatfields+1, dims[0], dims[1]))
-
-    data = scipy.io.loadmat('bm3d.mat')
-    benchmark = [data['j'], data['k'], data['l'], data['m']]
-    for i in range(1, nrEigenflatfields+1):
-        print(f'Filter eigen flat field {str(i)}')
-        min = np.min(EigenFlatfields[:][:][i])
-        max = np.max(EigenFlatfields[:][:][i])
-        tmp = (EigenFlatfields[:][:][i] - min) / (max - min)
-        tosave = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)
-        imwrite(tosave, outDIR + 'eigenflatfields/eigenflatfield_' + f'{i:{numType}}' + fileFormat)
-
-
-        #check = np.inf
-        #for fl in range(1, 256):
-        tmp2 = bm3d.bm3d(tmp, 25/255)
-        filteredEigenFlatfields[:][:][i] = (tmp2 * (max - min)) + min
-
-        #    ttt = benchmark[i]
-        #    kkk = filteredEigenFlatfields[:][:][i]
-
-        #    mse = mean_squared_error(benchmark[i], filteredEigenFlatfields[:][:][i])
-
-        #    if mse < check:
-        #        check = mse
-        #        print(f"Value {fl} has an mse of {mse}")
-        #print("")
-
-
-
-    meanVector = np.zeros(len(nrImage))
-    xArray = np.zeros((len(nrImage), nrEigenflatfields))
     for i in range(1, len(nrImage)+1):
-        print(f"Estimation projection {str(i)}/{str(len(nrImage))}...")
-        projection = imread(readDIR + prefixProj + f'{nrImage[i - 1]:{numType}}' + fileFormat)
-        tmp = np.divide((np.squeeze(projection) - meanDarkfield), EigenFlatfields[:][:][0])
-        meanVector[i-1] = np.mean(tmp[:])
-
-        x = condTVmean.condTVmean(projection, EigenFlatfields[:][:][0], filteredEigenFlatfields[:][:][1:(1+nrEigenflatfields)], meanDarkfield, np.zeros((1, nrEigenflatfields)), downsample)
-        xArray[:][i-1] = x
-
-        FFeff = np.zeros((meanDarkfield.shape[0], meanDarkfield.shape[1]))
-        for j in range(0, nrEigenflatfields):
-            FFeff = FFeff + x[j] * filteredEigenFlatfields[:][:][j+1]
-
-        tmp = np.divide((np.squeeze(projection) - meanDarkfield), (EigenFlatfields[:][:][0] + FFeff))
-        tmp = (tmp / np.mean(tmp[:])) * meanVector[i-1]
+        print(f'Conventional FFC: {str(i)}/{str(len(nrImage))}...')
+        # Load projection
+        projection = imread(readDIR + prefixProj + f'{nrImage[i-1]:{numType}}' + fileFormat)
+        # used to be np.divide instead of '/', check if this does the same
+        tmp = (np.squeeze(projection) - meanDarkfield) / eig0
 
         tmp[tmp < 0] = 0
         tmp = -np.log(tmp)
+        # TODO: maybe there is a one line fix but not sure yet
         tmp[tmp < 0] = 0
         tmp[np.isinf(tmp)] = 10 ** 5
 
         tmp = (tmp - scaleOutputImages[0]) / (scaleOutputImages[1] - scaleOutputImages[0])
-        tmp = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)
-        imwrite(tmp, outDIR + outPrefixDFFC + f'{nrImage[i - 1]:{numType}}' + fileFormat)
+        tmp = np.uint16(np.round((2 ** 16 - 1) * tmp))
+        imwrite(tmp, outDIR + outPrefixFFC + f'{nrImage[i - 1]:{numType}}' + fileFormat)

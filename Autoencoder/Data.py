@@ -10,6 +10,7 @@ def imwrite(matrix, path):
     image = im.fromarray(matrix)
     image.save(path)
 
+
 class Data:
     def __init__(self, batch_size):
         self.batch_size = batch_size
@@ -34,3 +35,6 @@ class Data:
         val_loader = DataLoader(valid_set, batch_size=self.batch_size)
         test_loader = DataLoader(test_set, batch_size=self.batch_size)
         return train_loader, val_loader, test_loader
+
+    def getsize(self):
+        return 0

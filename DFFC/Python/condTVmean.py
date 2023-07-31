@@ -1,4 +1,4 @@
-import imresize
+import DFFC.Python.imresize as imresize
 import numpy as np
 from scipy import optimize
 
