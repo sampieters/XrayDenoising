@@ -97,9 +97,6 @@ def DynamicFlatFieldCorrection():
     EigenFlatfields = np.zeros((nrEigenflatfields+1, eig0.shape[0], eig0.shape[1]))
     EigenFlatfields[:][:][0] = eig0
     for i in range(0, nrEigenflatfields):
-        # TODO: qucik fix but somehwere this gets turned around the negative
-        t = V1[:, N-i-1]
-        k = np.dot(Data, V1[:, N-i-1])
         EigenFlatfields[:][:][i+1] = np.reshape(np.dot(Data, V1[:, N-i-1]), dims, order='F')
     del Data
 
@@ -115,25 +112,8 @@ def DynamicFlatFieldCorrection():
         tmp = (EigenFlatfields[:][:][i] - min) / (max - min)
         tosave = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)
         imwrite(tosave, outDIR + 'eigenflatfields/eigenflatfield_' + f'{i:{numType}}' + fileFormat)
-
-
-        #check = np.inf
-        #for fl in range(1, 256):
         tmp2 = bm3d.bm3d(tmp, 25/255)
         filteredEigenFlatfields[:][:][i] = (tmp2 * (max - min)) + min
-
-        #    ttt = benchmark[i]
-        #    kkk = filteredEigenFlatfields[:][:][i]
-
-        #    mse = mean_squared_error(benchmark[i], filteredEigenFlatfields[:][:][i])
-
-        #    if mse < check:
-        #        check = mse
-        #        print(f"Value {fl} has an mse of {mse}")
-        #print("")
-
-
-
     meanVector = np.zeros(len(nrImage))
     xArray = np.zeros((len(nrImage), nrEigenflatfields))
     for i in range(1, len(nrImage)+1):

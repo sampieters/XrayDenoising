@@ -15,13 +15,21 @@ class Data:
     def __init__(self, batch_size):
         self.batch_size = batch_size
 
-    def read_from_folder(self, noisy_root, perf_root=None):
+    def read_from_folder(self, noisy_root, perf_root=None, data_augmentation=False):
         transform = transforms.Compose([
             transforms.Lambda(lambda img: np.asarray(img) / (2 ** 16 - 1)),
             transforms.Lambda(lambda img: torch.from_numpy(img)),
             transforms.Lambda(lambda img: img.to(torch.float32)),
             transforms.Lambda(lambda img: img.unsqueeze(0))
         ])
+
+        if data_augmentation:
+            # Define the data augmentation transformations
+            augmentation = transforms.Compose([
+                transforms.RandomHorizontalFlip(),  # Randomly flip the image horizontally
+            ])
+            transform = transforms.Compose([transform, augmentation])
+
         dataset = CustomImageFolder(noisy_root=noisy_root, perf_root=perf_root, transform=transform)
         return dataset
 
@@ -35,6 +43,3 @@ class Data:
         val_loader = DataLoader(valid_set, batch_size=self.batch_size)
         test_loader = DataLoader(test_set, batch_size=self.batch_size)
         return train_loader, val_loader, test_loader
-
-    def getsize(self):
-        return 0

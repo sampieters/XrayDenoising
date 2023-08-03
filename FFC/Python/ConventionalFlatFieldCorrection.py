@@ -7,9 +7,9 @@ from PIL import Image as im
 #################################################
 
 # Directory with raw dark fields, flat fields and projections in .tif format
-readDIR = '../../input/real/'
+readDIR = './input/SimulatedFFCs/noisy0/'
 # Directory for the output files
-outDIR = '../../output/FFC/Python/'
+outDIR = './output/FFC/Python/'
 
 # file names
 prefixProj =         'dbeer_5_5_'   # prefix of the original projections

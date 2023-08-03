@@ -7,9 +7,7 @@ class ConvolutionalAutoEncoder(torch.nn.Module):
         super().__init__()
 
         self.encoder = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=1, padding=1),
+            torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
@@ -22,14 +20,13 @@ class ConvolutionalAutoEncoder(torch.nn.Module):
             nn.ReLU(),
             torch.nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=8, out_channels=4, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=4, out_channels=1, kernel_size=3, stride=1, padding=1),
-
+            torch.nn.ConvTranspose2d(in_channels=8, out_channels=1, kernel_size=3, stride=1, padding=1),
             nn.Sigmoid()
         )
 
     def forward(self, x):
         encoded = self.encoder(x)
+
+        # Decoder with skip connections
         decoded = self.decoder(encoded)
         return decoded

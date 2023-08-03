@@ -8,9 +8,9 @@ import torch
 import Data
 
 input_size = (256, 1248)                        # the dimensions of the input projections
-training_dir = '../input/simulated/training/'   # directory where the noisy training data is saved
+training_dir = '../input/simulated_one/training/'   # directory where the noisy training data is saved
 outPrefixFFC = 'AUTOENCODER'                    # prefix of the autoencoder corrected projections
-perfect_dir = '../input/simulated/perfect/'     # directory where the perfect training data is saved
+perfect_dir = '../input/simulated_one/perfect/'     # directory where the perfect training data is saved
 training_perc = 0.8                             # training percentage, amount of data in dataset that is used for training
 validation_perc = 0.1                           # validation percentage, amount of data in dataset that is used for validation
 test_perc = 0.1                                 # test percentage, amount of data in dataset that is used for testing
@@ -30,7 +30,6 @@ def write_info(content):
         file.write(content)
     file.close()
 
-
 # configuring device, transfer data to GPU if available
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -41,12 +40,12 @@ else:
 
 # Get all images and divide them into training, validation and test set
 data = Data.Data(batch_size)
-train_set = data.read_from_folder(training_dir, perfect_dir)
+train_set = data.read_from_folder(training_dir, perfect_dir, False)
 train_loader, val_loader, test_loader = data.rand_split(train_set, training_perc, validation_perc, test_perc)
 
 # Choose the model, loss fucntion and optimizer
 model = ConvolutionalAutoEncoder()
-loss_function = torch.nn.L1Loss()
+loss_function = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
 if details:
