@@ -1,1 +1,10 @@
 /DFFC/MATLAB/BM3D/
+
+/input/benchmark/*
+/input/real/*
+/input/simulated/*
+
+/output/autoencoder/*
+/output/DFFC/*
+/output/FFC/*
+

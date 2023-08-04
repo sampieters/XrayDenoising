@@ -27,20 +27,20 @@ class CustomImageFolder(Dataset):
             for root, _, fnames in sorted(os.walk(target_path)):
                 for fname in sorted(fnames):
                     path = os.path.join(root, fname)
-                    self.noisy.append((path, self.noisy_class_to_idx[target]))
+                    self.noisy.append(path)
 
         for target in sorted(self.perfect_class_to_idx.keys()):
             target_path = os.path.join(self.perfect_root_dir, target)
             for root, _, fnames in sorted(os.walk(target_path)):
                 for fname in sorted(fnames):
                     path = os.path.join(root, fname)
-                    self.perfect.append((path, self.perfect_class_to_idx[target]))
+                    self.perfect.append(path)
 
     def __len__(self):
         return len(self.noisy)
 
     def __getitem__(self, index):
-        path, label = self.noisy[index]
+        path = self.noisy[index]
         with open(path, 'rb') as f:
             noisy_img = Image.open(f)
             if self.transform is not None:
@@ -48,7 +48,7 @@ class CustomImageFolder(Dataset):
 
         perf_img = torch.empty(0, 0)
         if self.perfect_root_dir is not None:
-            path, label = self.perfect[index]
+            path = self.perfect[index]
             with open(path, 'rb') as f:
                 perf_img = Image.open(f)
                 if self.transform is not None:
@@ -56,8 +56,8 @@ class CustomImageFolder(Dataset):
         return noisy_img, perf_img
 
     def showitem(self, index):
-        noisy_img, _ = self.noisy[index]
-        perf_img, _ = self.perfect[index]
+        noisy_img = self.noisy[index]
+        perf_img = self.perfect[index]
         img = Image.open(noisy_img)
         img2 = Image.open(perf_img)
         img.show()

@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader, random_split
-from CustomImageFolder import CustomImageFolder
+#from Autoencoder.CustomImageFolder import CustomImageFolder
+from Autoencoder.ImageFolder import ImageFolder
 import torchvision.transforms as transforms
 from PIL import Image as im
 import numpy as np
@@ -30,7 +31,7 @@ class Data:
             ])
             transform = transforms.Compose([transform, augmentation])
 
-        dataset = CustomImageFolder(noisy_root=noisy_root, perf_root=perf_root, transform=transform)
+        dataset = ImageFolder(noisy_root=noisy_root, perf_root=perf_root, transform=transform)
         return dataset
 
     def rand_split(self, dataset, training_perc, validation_perc, test_perc=0.0):
