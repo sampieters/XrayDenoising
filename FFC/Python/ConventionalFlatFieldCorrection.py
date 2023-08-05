@@ -1,17 +1,5 @@
 import os
-import numpy as np
-from PIL import Image as im
-
-
-def imread(path):
-    image = im.open(path)
-    return np.asarray(image)
-
-
-def imwrite(matrix, path):
-    image = im.fromarray(matrix)
-    image.save(path)
-
+from Utils.Utils import *
 
 def ConventionalFlatFieldCorrection(param):
     # Make the output directories
@@ -57,5 +45,4 @@ def ConventionalFlatFieldCorrection(param):
         tmp[tmp < 0] = 0
         tmp = np.clip(-np.log(tmp), a_min=0, a_max=10 ** 5)
         tmp = (tmp - param["scale"][0]) / (param["scale"][1] - param["scale"][0])
-        tmp = param["bit"](np.round((np.iinfo(param["bit"]).max * tmp)))
-        imwrite(tmp, param["FFC"]["outDir"] + param["FFC"]["outPrefix"] + f'{nrImage[i - 1]:{param["numType"]}}' + param["fileFormat"])
+        imwrite(tmp, param["bit"], param["FFC"]["outDir"] + param["FFC"]["outPrefix"] + f'{nrImage[i - 1]:{param["numType"]}}' + param["fileFormat"])

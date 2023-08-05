@@ -1,12 +1,5 @@
 import noise
-import numpy as np
-from PIL import Image as im
-
-def imread(path):
-    image = im.open(path)
-    image = np.asarray(image).astype(np.longdouble)
-    image = image / (2 ** 16 - 1)
-    return image
+from Utils.Utils import *
 
 class Machine:
     def __init__(self):
@@ -21,6 +14,7 @@ class Machine:
     def generate_projections(self):
         pass
 
+
 class XXX(Machine):
     def __init__(self):
         super().__init__()
@@ -30,12 +24,12 @@ class XXX(Machine):
         self.nrDark = 20                    # number of dark fields
 
         self.prefixFlat = 'dbeer_5_5_'      # prefix of the flat fields
-        self.firstFlat = 21           # image number of first prior flat field
-        self.nrFlat = 300             # number of white (flat) fields BEFORE acquiring the projections
+        self.firstFlat = 21                 # image number of first prior flat field
+        self.nrFlat = 300                   # number of white (flat) fields BEFORE acquiring the projections
 
         self.prefixProj = 'dbeer_5_5_'      # prefix of the original projections
         self.firstProj = 321                # image number of first projection
-        self.nrProj = 50                    # number of acquired projections
+        self.nrProj = 300                   # number of acquired projections
 
         self.size = (256, 1248)             # the dimensions of the input projections
         self.numType = '04d'                # number type used in image names
@@ -48,6 +42,7 @@ class XXX(Machine):
         dark = np.zeros((self.nrDark + 1, self.size[0], self.size[1]))
         for i in range(self.nrDark + 1):
             dark[:][:][i] = imread(self.directory + self.prefixProj + f'{self.firstDark + i:{self.numType}}' + self.fileFormat)
+            dark[:][:][i] = dark[:][:][i] / (2 ** 16 - 1)
         return dark
 
     def generate_flatfields(self):
@@ -55,9 +50,11 @@ class XXX(Machine):
         flat = np.zeros((self.nrFlat + 1, self.size[0], self.size[1]))
         for i in range(self.nrFlat + 1):
             flat[:][:][i] = imread(self.directory + self.prefixFlat + f'{self.firstFlat + i:{self.numType}}' + self.fileFormat)
+            flat[:][:][i] = flat[:][:][i] / (2 ** 16 - 1)
         return flat
 
     def generate_projections(self):
+        print("Simulating projections (ridged multifractal noise)...")
         projections = np.zeros((self.nrProj + 1, self.size[0], self.size[1]))
         for proj in range(self.nrProj):
             # Generate a grid of 2D noise

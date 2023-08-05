@@ -6,10 +6,11 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 import numpy as np
 import torch
+import os
 
 
 def write_info(path, content):
-    with open(path, "w") as file:
+    with open(path, "a+") as file:
         file.write(content)
     file.close()
 
@@ -22,6 +23,10 @@ def run(param):
     else:
         device = torch.device('cpu')
         device_type = 'cpu'
+
+    # Make info directory for training
+    directory = os.path.dirname(f'{param["AUTOENCODER"]["outDir"]}info/')
+    os.makedirs(directory, exist_ok=True)
 
     # Get all images and divide them into training, validation and test set
     data = Data(param["AUTOENCODER"]["batchSize"])
@@ -42,7 +47,7 @@ def run(param):
               f'Train set percentage: {param["AUTOENCODER"]["trainPerc"]}\n' \
               f'Validation set percentage: {param["AUTOENCODER"]["valPerc"]}\n' \
               f'Test set percentage: {param["AUTOENCODER"]["testPerc"]}\n'
-    write_info("./output/autoencoder/info/info.txt", content)
+    write_info(f'{param["AUTOENCODER"]["outDir"]}info/info.txt', content)
 
     # Train the model
     start_epoch = 0
@@ -108,14 +113,16 @@ def run(param):
         plt.show()
     plt.close()
 
-    train_content = f"Training losses:\n"
-    val_content = f"\nValidation losses:\n"
+    train_content = f"----------------------------------------------------------------\n" \
+                    f"Training losses:\n"
+    val_content = f"----------------------------------------------------------------\n" \
+                  f"Validation losses:\n"
     epoch = 0
     for index in range(len(train_losses)):
         train_content += f"Epoch {epoch + 1}: {train_losses[index]}\n"
         val_content += f"Epoch {epoch + 1}: {val_losses[index]}\n"
         epoch += 1
-    write_info("./output/autoencoder/info/info.txt", train_content + val_content)
+    write_info(f'{param["AUTOENCODER"]["outDir"]}info/info.txt', train_content + val_content)
 
     # Test the model
     checkpoint = torch.load(f'{param["AUTOENCODER"]["outDir"]}info/Checkpoint.pth')

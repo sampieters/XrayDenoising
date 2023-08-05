@@ -1,17 +1,18 @@
 from FFC.Python.ConventionalFlatFieldCorrection import ConventionalFlatFieldCorrection
 from DFFC.Python.DynamicFlatFieldCorrection import DynamicFlatFieldCorrection
+from Simulation.simulate import make_benchmark_dataset, make_training_dataset
 from Autoencoder.run import run
 
 import argparse
 import os
-from PIL import Image as im
+from Utils.Utils import *
 import numpy as np
 import torch.nn.functional as F
 from torchvision.transforms import ToTensor
 
 parameters = {
-    "inDir":             "./input/benchmark/noisy0/",
-    "checkDir":          "./input/benchmark/perfect0/",
+    "inDir":             "./input/benchmark/noisy/",
+    "checkDir":          "./input/benchmark/perfect/",
     "FFC": {                                                # ## FFC ###
         "outDir":        "./output/FFC/Python/",            # directory the FFC corrected projections are saved
         "outPrefix":     "FFC_",                            # prefix of the FFC corrected projections
@@ -25,8 +26,8 @@ parameters = {
     "AUTOENCODER": {                                        # ## AUTOENCODER ###
         "outDir":        "./output/autoencoder/",           # directory the autoencoder corrected projections are saved
         "outPrefix":     "AUTOENCODER_",                    # prefix of the autoencoder corrected projections
-        "trainDir":      "./input/simulated/training/", # directory the noisy training data is saved
-        "perfDir":       "./input/simulated/perfect/",  # directory the perfect training data is saved
+        "trainDir":      "./input/simulated/noisy/",        # directory the noisy training data is saved
+        "perfDir":       "./input/simulated/perfect/",      # directory the perfect training data is saved
         "checkpoint":    None,                              # path to load a checkpoint to train the model from (None = no checkpoint)
         "test":          True,                              # test on input directory if True else on trainDir
         "trainPerc":     0.8,                               # training percentage, amount of data that is used for training
@@ -34,7 +35,7 @@ parameters = {
         "testPerc":      0.1,                               # test percentage, amount of data that is used for testing (value between 0 and 1)
         "batchSize":     32,                                # number of samples propagated through the autoencoder at once
         "lr":            0.001,                             # starting learning rate
-        "epochs":        100,                               # number of times the entire dataset is passed through the model during training
+        "epochs":        150,                               # number of times the entire dataset is passed through the model during training
         "weightDecay":   0,                                 #
     },
     "prefixProj":        "dbeer_5_5_",                      # prefix of the projections
@@ -52,21 +53,17 @@ parameters = {
     "nrWhitePost":       0,                                 # number of white (flat) fields AFTER acquiring the projections
     "firstProj":         321,                               # image number of first projection
     "nrProj":            50,                                # number of acquired projections
-    "scale":             [0, 2]                             # output images are scaled between these values
+    "scale":             [0, 1]                             # output images are scaled between these values
 }
 
-
-def imread(path):
-    image = im.open(path)
-    image = np.asarray(image).astype(np.double)
-    image = image / np.iinfo(parameters["bit"]).max
-    return image
 
 def check(algorithm):
     meanloss = 0
     for i in range(parameters["nrProj"]):
         check1 = imread(f'{parameters["checkDir"]}{parameters["prefixProj"]}{parameters["firstProj"] + i:{parameters["numType"]}}{parameters["fileFormat"]}')
+        check1 = check1 / np.iinfo(parameters["bit"]).max
         check2 = imread(f'{parameters[algorithm]["outDir"]}{parameters[algorithm]["outPrefix"]}{parameters["firstProj"] + i:{parameters["numType"]}}{parameters["fileFormat"]}')
+        check2 = check2 / np.iinfo(parameters["bit"]).max
 
         totensor = ToTensor()
         check1 = totensor(check1)
@@ -76,6 +73,7 @@ def check(algorithm):
         meanloss += mse_loss
         print(f"MSE Loss: {mse_loss}")
     print(f'Mean MSE Loss: {meanloss / parameters["nrProj"]}')
+
 
 def run_command(algorithms):
     if 'FFC' in algorithms:
@@ -87,6 +85,14 @@ def run_command(algorithms):
     print(f"The algorithms have been executed successfully.")
 
 
+def simulate_command(option):
+    if option == "training":
+        make_training_dataset(parameters)
+    elif option == "real":
+        make_benchmark_dataset(parameters)
+    print(f"Simulation '{option}' finished successfully.")
+
+
 def benchmark_command(algorithms):
     if 'FFC' in algorithms:
         ConventionalFlatFieldCorrection(parameters)
@@ -95,7 +101,7 @@ def benchmark_command(algorithms):
         DynamicFlatFieldCorrection(parameters)
         check('DFFC')
     if 'AUTOENCODER' in algorithms:
-        run(parameters)
+        #run(parameters)
         check('AUTOENCODER')
     print(f"The algorithms have been executed and tested successfully.")
 
@@ -134,8 +140,11 @@ def clear_command():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--action", type=str, choices=["run", "simulate", "benchmark", "clear"], help="The actions")
-    algo_group = parser.add_argument_group("Run command arguments")
+    algo_group = parser.add_argument_group("Run/Benchmark command arguments")
     algo_group.add_argument("--algorithms", nargs='+', type=str, help="Algorithms to run")
+    sim_group = parser.add_argument_group("Simulate command arguments")
+    sim_group.add_argument("--option", type=str, choices=["training", "real"],
+                           help="training = No black/flat-fields, real = Contains black/flat-fields and projections")
 
     args = parser.parse_args()
 
@@ -146,7 +155,10 @@ if __name__ == "__main__":
         else:
             print(f"The '{args.action}' command requires '--algorithms' argument.")
     elif args.action == "simulate":
-        simulate_command()
+        if args.option is not None:
+            simulate_command(args.option)
+        else:
+            print(f"The '{args.action}' command requires '--algorithms' argument.")
     elif args.action == "benchmark":
         # Handle the "benchmark" command
         if args.algorithms is not None:

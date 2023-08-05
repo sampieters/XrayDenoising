@@ -1,17 +1,8 @@
 import bm3d
 from DFFC.Python.condTVmean import condTVmean
-import numpy as np
 import DFFC.Python.parallelAnalysis as parallelAnalysis
-from PIL import Image as im
+from Utils.Utils import *
 
-
-def imread(path):
-    image = im.open(path)
-    return np.asarray(image)
-
-
-def imwrite(matrix, path):
-    im.fromarray(matrix).save(path)
 
 
 def DynamicFlatFieldCorrection(param):
@@ -66,8 +57,7 @@ def DynamicFlatFieldCorrection(param):
         min = np.min(EigenFlatfields[:][:][i])
         max = np.max(EigenFlatfields[:][:][i])
         tmp = (EigenFlatfields[:][:][i] - min) / (max - min)
-        tosave = np.round((2 ** 16 - 1) * tmp).astype(np.uint16)
-        imwrite(tosave, param["DFFC"]["outDir"] + 'eigenflatfields/eigenflatfield_' + f'{i:{param["numType"]}}' + param["fileFormat"])
+        imwrite(tmp, param["bit"], param["DFFC"]["outDir"] + 'eigenflatfields/eigenflatfield_' + f'{i:{param["numType"]}}' + param["fileFormat"])
         tmp2 = bm3d.bm3d(tmp, 25/255)
         filteredEigenFlatfields[:][:][i] = (tmp2 * (max - min)) + min
     meanVector = np.zeros(len(nrImage))
@@ -90,5 +80,4 @@ def DynamicFlatFieldCorrection(param):
         tmp[tmp < 0] = 0
         tmp = np.clip(-np.log(tmp), a_min=0, a_max=10 ** 5)
         tmp = (tmp - param["scale"][0]) / (param["scale"][1] - param["scale"][0])
-        tmp = param["bit"](np.round((np.iinfo(param["bit"]).max * tmp)))
-        imwrite(tmp, param["DFFC"]["outDir"] + param["DFFC"]["outPrefix"] + f'{nrImage[i - 1]:{param["numType"]}}' + param["fileFormat"])
+        imwrite(tmp, param["bit"], param["DFFC"]["outDir"] + param["DFFC"]["outPrefix"] + f'{nrImage[i - 1]:{param["numType"]}}' + param["fileFormat"])
