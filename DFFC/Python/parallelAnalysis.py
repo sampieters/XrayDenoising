@@ -1,7 +1,7 @@
 import numpy as np
 
 def parallelAnalysis(flatFields, repetitions):
-    stdEFF = np.std(flatFields, 1, ddof=1)
+    stdEFF = np.std(flatFields, 1)
     keepTrack = np.zeros((repetitions, flatFields.shape[1]))
     stdMatrix = np.transpose([stdEFF] * flatFields.shape[1])
 
@@ -9,7 +9,7 @@ def parallelAnalysis(flatFields, repetitions):
         print(f"Parallel Analysis: repetition {str(i)}")
         tmp = np.random.randn(flatFields.shape[0], flatFields.shape[1])
         sample = stdMatrix * tmp
-        cov = np.cov(sample, rowvar=False)
+        cov = np.cov(sample, bias=True, rowvar=False)
         D1, _ = np.linalg.eigh(cov)
         keepTrack[:][i-1] = D1
 

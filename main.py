@@ -2,13 +2,9 @@ from FFC.Python.ConventionalFlatFieldCorrection import ConventionalFlatFieldCorr
 from DFFC.Python.DynamicFlatFieldCorrection import DynamicFlatFieldCorrection
 from Simulation.simulate import make_benchmark_dataset, make_training_dataset
 from Autoencoder.run import run
-
+import numpy as np
 import argparse
 import os
-from Utils.Utils import *
-import numpy as np
-import torch.nn.functional as F
-from torchvision.transforms import ToTensor
 
 parameters = {
     "inDir":             "./input/benchmark/noisy/",
@@ -34,8 +30,8 @@ parameters = {
         "valPerc":       0.1,                               # validation percentage, amount of data that is used for validation
         "testPerc":      0.1,                               # test percentage, amount of data that is used for testing (value between 0 and 1)
         "batchSize":     32,                                # number of samples propagated through the autoencoder at once
-        "lr":            0.001,                             # starting learning rate
-        "epochs":        150,                               # number of times the entire dataset is passed through the model during training
+        "lr":            0.001,                            # starting learning rate
+        "epochs":        15,                                # number of times the entire dataset is passed through the model during training
         "weightDecay":   0,                                 #
     },
     "prefixProj":        "dbeer_5_5_",                      # prefix of the projections
@@ -50,32 +46,24 @@ parameters = {
     "firstWhitePrior":   21,                                # image number of first prior flat field
     "nrWhitePrior":      300,                               # number of white (flat) fields BEFORE acquiring the projections
     "firstWhitePost":    572,                               # image number of first post flat field
-    "nrWhitePost":       0,                                 # number of white (flat) fields AFTER acquiring the projections
+    "nrWhitePost":       300,                               # number of white (flat) fields AFTER acquiring the projections
     "firstProj":         321,                               # image number of first projection
-    "nrProj":            50,                                # number of acquired projections
+    "nrProj":            250,                               # number of acquired projections
     "scale":             [0, 1]                             # output images are scaled between these values
 }
 
 
-def check(algorithm):
-    meanloss = 0
-    for i in range(parameters["nrProj"]):
-        check1 = imread(f'{parameters["checkDir"]}{parameters["prefixProj"]}{parameters["firstProj"] + i:{parameters["numType"]}}{parameters["fileFormat"]}')
-        check1 = check1 / np.iinfo(parameters["bit"]).max
-        check2 = imread(f'{parameters[algorithm]["outDir"]}{parameters[algorithm]["outPrefix"]}{parameters["firstProj"] + i:{parameters["numType"]}}{parameters["fileFormat"]}')
-        check2 = check2 / np.iinfo(parameters["bit"]).max
-
-        totensor = ToTensor()
-        check1 = totensor(check1)
-        check2 = totensor(check2)
-
-        mse_loss = F.mse_loss(check1, check2)
-        meanloss += mse_loss
-        print(f"MSE Loss: {mse_loss}")
-    print(f'Mean MSE Loss: {meanloss / parameters["nrProj"]}')
-
-
 def run_command(algorithms):
+    """
+    This function takes a list of algorithm names as input and executes the corresponding algorithms based on the provided choices.
+
+    :param algorithms: A list of strings containing the algorithm names to execute, e.g., ['FFC', 'DFFC', 'AUTOENCODER'].
+
+    It can execute the following algorithms:
+    - 'FFC': Conventional Flat Field Correction
+    - 'DFFC': Dynamic Flat Field Correction
+    - 'AUTOENCODER': Convolutional autoencoder-based image processing
+    """
     if 'FFC' in algorithms:
         ConventionalFlatFieldCorrection(parameters)
     if 'DFFC' in algorithms:
@@ -86,6 +74,15 @@ def run_command(algorithms):
 
 
 def simulate_command(option):
+    """
+    Simulate a dataset based on the provided option, generating data with or without dark- and flatfields.
+
+    :param option: The simulation option, a string which can be 'training' or 'real'.
+
+    This function simulates a dataset based on the provided option:
+    - 'training': Generates a training dataset without dark- and flatfields.
+    - 'real': Generates a real dataset containing dark- and flatfields.
+    """
     if option == "training":
         make_training_dataset(parameters)
     elif option == "real":
@@ -93,20 +90,49 @@ def simulate_command(option):
     print(f"Simulation '{option}' finished successfully.")
 
 
-def benchmark_command(algorithms):
+def benchmark_command(algorithms, version):
+    """
+    Execute and benchmark specified image processing algorithms based on user-defined choices.
+
+    Parameters:
+    :param algorithms: A list of strings with algorithm names to execute and benchmark, e.g., ['FFC', 'DFFC', 'AUTOENCODER'].
+    :param version: The version as string of algorithms to use ('Python', 'MATLAB', '').
+
+    This function takes a list of algorithm names and a version as input and executes the corresponding algorithms based
+    on the provided choices.
+    It can execute and benchmark the following algorithms:
+    - 'FFC': Conventional Flat Field Correction
+    - 'DFFC': Dynamic Flat Field Correction
+    - 'AUTOENCODER': convolutional autoencoder-based image processing
+
+    The 'version' parameter allows specifying a specific version of algorithms. If 'version' is not provided or set to
+    'Python', the Python implementation is used, else MATLAB version.
+    """
+    # Go over all algorithms to check, if no algorithm given then check all
     if 'FFC' in algorithms:
-        ConventionalFlatFieldCorrection(parameters)
-        check('FFC')
+        if version is None or version == "Python":
+            ConventionalFlatFieldCorrection(parameters)
+        check(parameters, 'FFC')
     if 'DFFC' in algorithms:
-        DynamicFlatFieldCorrection(parameters)
-        check('DFFC')
+        if version is None or version == "Python":
+            DynamicFlatFieldCorrection(parameters)
+        check(parameters, 'DFFC')
     if 'AUTOENCODER' in algorithms:
-        #run(parameters)
-        check('AUTOENCODER')
+        run(parameters)
+        check(parameters, 'AUTOENCODER')
+    if len(algorithms) == 0:
+        benchmark_all(parameters)
     print(f"The algorithms have been executed and tested successfully.")
 
 
 def clear_command():
+    """
+    Clear specified directories by removing all files and subdirectories.
+
+    This function clears directories specified in the 'directory_paths' list by removing all files and subdirectories
+    within them. It is typically used to clean up output directories associated with image processing algorithms.
+    """
+    # Specify which paths to clear
     directory_paths = [parameters["FFC"]["outDir"],
                       parameters["DFFC"]["outDir"],
                       parameters["AUTOENCODER"]["outDir"],
@@ -114,8 +140,8 @@ def clear_command():
                       parameters["AUTOENCODER"]["perfDir"]
                       ]
     try:
+        # Loop over all directories (if they exist)
         for directory in directory_paths:
-            # Check if the directory exists
             if not os.path.exists(directory):
                 print(f"The directory '{directory}' does not exist.")
                 return
@@ -138,16 +164,21 @@ def clear_command():
 
 
 if __name__ == "__main__":
+    # Parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--action", type=str, choices=["run", "simulate", "benchmark", "clear"], help="The actions")
     algo_group = parser.add_argument_group("Run/Benchmark command arguments")
-    algo_group.add_argument("--algorithms", nargs='+', type=str, help="Algorithms to run")
+    algo_group.add_argument("--algorithms", nargs='*', type=str, help="Algorithms to run")
+
+    version = parser.add_argument_group("optional benchmark command arguments")
+    version.add_argument("--version", type=str, help="version of FFC/DFFC")
+
     sim_group = parser.add_argument_group("Simulate command arguments")
     sim_group.add_argument("--option", type=str, choices=["training", "real"],
                            help="training = No black/flat-fields, real = Contains black/flat-fields and projections")
-
     args = parser.parse_args()
 
+    # Check the value of the "--action" argument to determine the action to take
     if args.action == "run":
         # Handle the "run" command
         if args.algorithms is not None:
@@ -155,6 +186,7 @@ if __name__ == "__main__":
         else:
             print(f"The '{args.action}' command requires '--algorithms' argument.")
     elif args.action == "simulate":
+        # Handle the "simulate" command
         if args.option is not None:
             simulate_command(args.option)
         else:
@@ -162,7 +194,7 @@ if __name__ == "__main__":
     elif args.action == "benchmark":
         # Handle the "benchmark" command
         if args.algorithms is not None:
-            benchmark_command(args.algorithms)
+            benchmark_command(args.algorithms, args.version)
         else:
             print(f"The '{args.action}' command requires '--algorithms' argument.")
     elif args.action == "clear":

@@ -3,8 +3,6 @@ from DFFC.Python.condTVmean import condTVmean
 import DFFC.Python.parallelAnalysis as parallelAnalysis
 from Utils.Utils import *
 
-
-
 def DynamicFlatFieldCorrection(param):
     # Get a list of all projection indices and get the dimensions of a .tif image (because they are all the same,
     # get the dimensions of the first image)

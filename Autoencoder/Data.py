@@ -38,6 +38,9 @@ class Data:
         train_size = int(training_perc * len(dataset))
         val_size = int(validation_perc * len(dataset))
         test_size = int(test_perc * len(dataset))
+
+        train_size += len(dataset) - train_size - val_size - test_size
+
         train_set, valid_set, test_set = random_split(dataset, [train_size, val_size, test_size])
 
         train_loader = DataLoader(train_set, batch_size=self.batch_size)

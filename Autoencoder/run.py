@@ -35,7 +35,7 @@ def run(param):
 
     # Choose the model, loss function and optimizer
     model = ConvolutionalAutoEncoder()
-    loss_function = torch.nn.MSELoss()
+    loss_function = torch.nn.L1Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=param["AUTOENCODER"]["lr"], weight_decay=param["AUTOENCODER"]["weightDecay"])
 
     content = f'Device type: {device_type}\n' \
@@ -53,7 +53,7 @@ def run(param):
     start_epoch = 0
     # Load model and optimizer states and epoch from the checkpoint
     if param["AUTOENCODER"]["checkpoint"] is not None:
-        checkpoint = torch.load( param["AUTOENCODER"]["checkpoint"])
+        checkpoint = torch.load(param["AUTOENCODER"]["checkpoint"])
         model.load_state_dict(checkpoint['model_state'])
         optimizer.load_state_dict(checkpoint['optimizer_state'])
         start_epoch = checkpoint['epoch']

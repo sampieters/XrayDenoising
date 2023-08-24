@@ -22,16 +22,16 @@
 %iMinds-vision lab
 %University of Antwerp
 %% parameters
-
+tic
 %directories
 % Directory with raw dark fields, flat fields and projections in .tif format
-readDIR=    '../../input/duplicate_testing/real_0/';          
+readDIR= './XrayDenoising/input/benchmark/noisy/';       
 % Directory where the CONVENTIONAL flat field corrected projections are saved
-outDIRFFC=  '../../output/FFC/MATLAB/';
+outDIRFFC=  './XrayDenoising/output/FFC/MATLAB/';
 
 %file names
 prefixProj=         'dbeer_5_5_';   % prefix of the original projections
-outPrefixFFC=       'FFC';          % prefix of the CONVENTIONAL flat field corrected projections
+outPrefixFFC=       'FFC_';         % prefix of the CONVENTIONAL flat field corrected projections
 prefixFlat=         'dbeer_5_5_';   % prefix of the flat fields
 prefixDark=         'dbeer_5_5_';   % prefix of the dark fields
 numType=            '%04d';         % number type used in image names
@@ -43,11 +43,11 @@ nrWhitePrior=       300;            % number of white (flat) fields BEFORE acqui
 firstWhitePrior=    21;             % image number of first prior flat field
 nrWhitePost=        300;            % number of white (flat) fields AFTER acquiring the projections
 firstWhitePost=     572;            % image number of first post flat field
-nrProj=             50;        	% number of acquired projections
+nrProj=             250;        	% number of acquired projections
 firstProj=          321;            % image number of first projection
 
 % options output images
-scaleOutputImages=  [0 2];          %output images are scaled between these values
+scaleOutputImages=  [0 1];          %output images are scaled between these values
 
 %% load dark and white fields
 mkdir(outDIRFFC)
@@ -72,8 +72,7 @@ display('Load white fields ...')
 k=0;
 for ii=firstWhitePrior:firstWhitePrior-1+nrWhitePrior
     k=k+1;
-    tmp2=double(imread([readDIR prefixFlat num2str(ii,numType) fileFormat]));
-    tmp=tmp2-meanDarkfield;
+    tmp=double(imread([readDIR prefixFlat num2str(ii,numType) fileFormat]))-meanDarkfield;
     whiteVec(:,k)=tmp(:)-meanDarkfield(:);
 end
 for ii=firstWhitePost:firstWhitePost-1+nrWhitePost
@@ -107,3 +106,4 @@ for ii=1:length(nrImage)
     tmp=uint16((2^16-1)*tmp);
     imwrite(tmp,[outDIRFFC outPrefixFFC num2str(nrImage(ii),numType) fileFormat]);
 end
+toc

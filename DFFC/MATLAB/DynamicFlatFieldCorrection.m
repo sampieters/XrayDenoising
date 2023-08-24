@@ -25,9 +25,9 @@
 
 %directories
 % Directory with raw dark fields, flat fields and projections in .tif format
-readDIR=    '../../input/duplicate_testing/real_0/';
+readDIR=    './XrayDenoising/input/real/';
 % Directory where the DYNAMIC flat field corrected projections are saved
-outDIRDFFC= '../../output/DFFC/MATLAB';
+outDIRDFFC= '../../output/DFFC/MATLAB/';
 
 addpath('/Users/sampieters/Desktop/informatica/master/Research Project/CodeDynamicFlatFieldCorrection/BM3D')              % directory with files of BM3D filter
 
@@ -41,11 +41,11 @@ fileFormat=         '.tif';         % image format
 
 nrDark=             20;             % number of dark fields
 firstDark=          1;              % image number of first dark field
-nrWhitePrior=       300;            % number of white (flat) fields BEFORE acquiring the projections
+nrWhitePrior=       10;            % number of white (flat) fields BEFORE acquiring the projections
 firstWhitePrior=    21;             % image number of first prior flat field
-nrWhitePost=        300;            % number of white (flat) fields AFTER acquiring the projections
+nrWhitePost=        0;            % number of white (flat) fields AFTER acquiring the projections
 firstWhitePost=     572;            % image number of first post flat field
-nrProj=             50;        	    % number of acquired projections
+nrProj=             250;        	    % number of acquired projections
 firstProj=          321;            % image number of first projection
 
 % options output images
@@ -58,8 +58,7 @@ nrPArepetions=      10;             % number of parallel analysis repetions
 
 %% load dark and white fields
 
-mkdir(outDIRDFFC)
-%mkdir(outDIRFFC)
+%mkdir(outDIRDFFC)
 
 nrImage=firstProj:firstProj-1+nrProj;
 display('load dark and flat fields:')

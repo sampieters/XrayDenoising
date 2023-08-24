@@ -1,3 +1,4 @@
+import random
 from Simulation.Machine import *
 
 # image size
@@ -14,21 +15,23 @@ nrDark =             20             # number of dark fields
 firstDark =          1              # image number of first dark field
 nrWhitePrior =       300            # number of white (flat) fields BEFORE acquiring the projections
 firstWhitePrior =    21             # image number of first prior flat field
-nrProj =             50        	    # number of acquired projections
+nrProj =             251        	# number of acquired projections
 firstProj =          321            # image number of first projection
 
+firstWhitePost = 572  # image number of first post flat field
+nrWhitePost = 300  # number of white (flat) fields AFTER acquiring the projections
 
 def make_benchmark_dataset(param):
     writeDIR = './input/benchmark/'
 
     machine = XXX()
-    darkfields = machine.generate_darkfields()
-    flatfields = machine.generate_flatfields()
-    clean = machine.generate_projections()
+    darkfields = machine.generate_darkfields(param["nrDark"])
+    flatfields = machine.generate_flatfields(param["nrWhitePrior"])
+    clean = machine.generate_projections(nrProj)
 
     # Make the simulated noisy projections
-    projections = np.zeros((nrProj + 1, image_size[0], image_size[1]))
-    for i in range(nrProj + 1):
+    projections = np.zeros((nrProj, image_size[0], image_size[1]))
+    for i in range(nrProj):
         d_j = darkfields[np.random.randint(0, nrDark)]
         f_j = flatfields[np.random.randint(0, nrWhitePrior)]
         n_j = clean[i]
@@ -47,27 +50,37 @@ def make_benchmark_dataset(param):
     for i in range(nrProj):
         imwrite(projections[i], type, writeDIR + 'noisy/' + prefixProj + f'{firstProj + i:{numType}}' + fileFormat)
 
+    for i in range(nrWhitePost):
+        imwrite(flatfields[nrWhitePrior + i], type, writeDIR + 'noisy/' + prefixFlat + f'{firstWhitePost + i:{numType}}' + fileFormat)
+
 def make_training_dataset(param):
     writeDIR = './input/simulated/'
 
-    machine = XXX()
-    darkfields = machine.generate_darkfields()
-    flatfields = machine.generate_flatfields()
-    clean = machine.generate_projections()
+    amount = 600
 
-    # TODO: parameter to generate how many training data, should maybe not contain duplicates for flatfields in random function
-    amount = 300
+    machine = XXX()
+    darkfields = machine.generate_darkfields(amount)
+    flatfields = machine.generate_flatfields(amount)
+    clean = machine.generate_projections(amount)
+
     # Make the simulated noisy projections
     projections = np.zeros((amount, image_size[0], image_size[1]))
+    objects = np.zeros((amount, image_size[0], image_size[1]))
+
+    random_dark = random.choices(range(len(darkfields)), k=amount)
+    random_flat = random.sample(range(len(flatfields)), amount)
+    random_proj = random.sample(range(len(clean)), amount)
+
     for i in range(amount):
-        d_j = darkfields[np.random.randint(0, nrDark)]
-        f_j = flatfields[np.random.randint(0, nrWhitePrior)]
-        n_j = clean[i]
+        d_j = darkfields[random_dark[i]]
+        f_j = flatfields[random_flat[i]]
+        n_j = clean[random_proj[i]]
+        objects[i] = n_j
         projections[i] = np.exp(-n_j) * (f_j - d_j) + d_j
 
     # Write everything to a file
     for i in range(amount):
-        imwrite(clean[i], type, writeDIR + 'perfect/' + prefixProj + f'{firstProj + i:{numType}}' + fileFormat)
+        imwrite(objects[i], type, writeDIR + 'perfect/' + prefixProj + f'{firstProj + i:{numType}}' + fileFormat)
 
     for i in range(amount):
         imwrite(projections[i], type, writeDIR + 'noisy/' + prefixProj + f'{firstProj + i:{numType}}' + fileFormat)
