@@ -2,8 +2,10 @@ from FFC.Python.ConventionalFlatFieldCorrection import ConventionalFlatFieldCorr
 from DFFC.Python.DynamicFlatFieldCorrection import DynamicFlatFieldCorrection
 from Simulation.simulate import make_benchmark_dataset, make_training_dataset
 from Autoencoder.run import run
+from benchmark import check
 import numpy as np
 import argparse
+import time
 import os
 
 parameters = {
@@ -15,7 +17,7 @@ parameters = {
     },
     "DFFC": {                                               # ## DFFC ###
         "outDir":        "./output/DFFC/Python/",           # directory the DFFC corrected projections are saved
-        "outPrefix":     "DFFC_",                           # prefix of the DFFC corrected projections
+        "outPrefix":     "DFFC",                           # prefix of the DFFC corrected projections
         "downsample":    2,                                 # amount of downsampling during dynamic flat field estimation (integer between 1 and 20)
         "nrPArepetitions": 10,                              # number of parallel analysis repetitions
     },
@@ -24,14 +26,14 @@ parameters = {
         "outPrefix":     "AUTOENCODER_",                    # prefix of the autoencoder corrected projections
         "trainDir":      "./input/simulated/noisy/",        # directory the noisy training data is saved
         "perfDir":       "./input/simulated/perfect/",      # directory the perfect training data is saved
-        "checkpoint":    None,                              # path to load a checkpoint to train the model from (None = no checkpoint)
+        "checkpoint":    "./output/autoencoder/info/Checkpoint.pth",                              # path to load a checkpoint to train the model from (None = no checkpoint)
         "test":          True,                              # test on input directory if True else on trainDir
         "trainPerc":     0.8,                               # training percentage, amount of data that is used for training
         "valPerc":       0.1,                               # validation percentage, amount of data that is used for validation
         "testPerc":      0.1,                               # test percentage, amount of data that is used for testing (value between 0 and 1)
         "batchSize":     32,                                # number of samples propagated through the autoencoder at once
         "lr":            0.001,                            # starting learning rate
-        "epochs":        15,                                # number of times the entire dataset is passed through the model during training
+        "epochs":        30,                                # number of times the entire dataset is passed through the model during training
         "weightDecay":   0,                                 #
     },
     "prefixProj":        "dbeer_5_5_",                      # prefix of the projections
@@ -108,17 +110,25 @@ def benchmark_command(algorithms, version):
     The 'version' parameter allows specifying a specific version of algorithms. If 'version' is not provided or set to
     'Python', the Python implementation is used, else MATLAB version.
     """
-    # Go over all algorithms to check, if no algorithm given then check all
     if 'FFC' in algorithms:
         if version is None or version == "Python":
+            start_time = time.time()
             ConventionalFlatFieldCorrection(parameters)
+            end_time = time.time()
+            print(f"FFC time: {end_time - start_time}")
         check(parameters, 'FFC')
     if 'DFFC' in algorithms:
         if version is None or version == "Python":
+            start_time = time.time()
             DynamicFlatFieldCorrection(parameters)
+            end_time = time.time()
+            print(f"DFFC time: {end_time - start_time}")
         check(parameters, 'DFFC')
     if 'AUTOENCODER' in algorithms:
+        start_time = time.time()
         run(parameters)
+        end_time = time.time()
+        print(f"convolutional autoencoder time: {end_time - start_time}")
         check(parameters, 'AUTOENCODER')
     if len(algorithms) == 0:
         benchmark_all(parameters)

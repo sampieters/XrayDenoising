@@ -1,3 +1,5 @@
+import torch
+
 from FFC.Python.ConventionalFlatFieldCorrection import ConventionalFlatFieldCorrection
 from DFFC.Python.DynamicFlatFieldCorrection import DynamicFlatFieldCorrection
 from torchvision.transforms import ToTensor
@@ -30,7 +32,7 @@ def check(parameters, algorithm):
         check2 = totensor(check2)
 
         loss = F.mse_loss(check1, check2)
-        #loss = 20 * torch.log10(1.0 / torch.sqrt(mse_loss))
+        loss = 20 * torch.log10(1.0 / torch.sqrt(loss))
         meanloss += loss
     print(f'Mean MSE Loss: {meanloss / parameters["nrProj"]}')
     return meanloss / parameters["nrProj"]

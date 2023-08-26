@@ -25,9 +25,9 @@
 
 %directories
 % Directory with raw dark fields, flat fields and projections in .tif format
-readDIR=    './XrayDenoising/input/real/';
+readDIR=    './XrayDenoising/input/benchmark/noisy/';      
 % Directory where the DYNAMIC flat field corrected projections are saved
-outDIRDFFC= '../../output/DFFC/MATLAB/';
+outDIRDFFC= './XrayDenoising/output/DFFC/MATLAB/';
 
 addpath('/Users/sampieters/Desktop/informatica/master/Research Project/CodeDynamicFlatFieldCorrection/BM3D')              % directory with files of BM3D filter
 

@@ -26,7 +26,11 @@ def imwrite(matrix, type, path):
     :param type: The data type to use for image pixel values (e.g., np.uint8 for 8-bit images).
     :param path: The file path where the image should be saved.
     """
-    matrix = type(np.round((np.iinfo(type).max * matrix)))
+    matrix = np.round((np.iinfo(type).max * matrix))
+    matrix = np.clip(matrix, a_min=0, a_max=np.iinfo(type).max)
+    matrix = type(matrix)
+
+    #matrix = type(np.round((np.iinfo(type).max * matrix)))
     image = im.fromarray(matrix)
     image.save(path)
 

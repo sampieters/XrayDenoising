@@ -43,7 +43,7 @@ class Data:
 
         train_set, valid_set, test_set = random_split(dataset, [train_size, val_size, test_size])
 
-        train_loader = DataLoader(train_set, batch_size=self.batch_size)
-        val_loader = DataLoader(valid_set, batch_size=self.batch_size)
-        test_loader = DataLoader(test_set, batch_size=self.batch_size)
+        train_loader = DataLoader(train_set, batch_size=self.batch_size, shuffle=True)
+        val_loader = DataLoader(valid_set, batch_size=self.batch_size, shuffle=True)
+        test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=True)
         return train_loader, val_loader, test_loader
